@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import torch.nn
 import torch.optim as optim
+import torch.nn.functional as F
 import random
 
 
@@ -27,8 +28,9 @@ class DQN_Agent():
         self.TAU = TAU
         self.GAMMA = GAMMA
         self.UPDATE_EVERY = UPDATE_EVERY
+        self.BATCH_SIZE = BATCH_SIZE
 
-        self.action_step = 0
+        self.action_step = 4
         self.last_action = None
 
 	    # Q-Network
@@ -47,10 +49,10 @@ class DQN_Agent():
         self.memory.add(state, action, reward, next_state, done)
         
         # Learn every UPDATE_EVERY time steps.
-        self.t_step = (self.t_step + 1) % UPDATE_EVERY
+        self.t_step = (self.t_step + 1) % self.UPDATE_EVERY
         if self.t_step == 0:
             # If enough samples are available in memory, get random subset and learn
-            if len(self.memory) > BATCH_SIZE:
+            if len(self.memory) > self.BATCH_SIZE:
                 experiences = self.memory.sample()
                 self.learn(experiences)
 
@@ -91,7 +93,6 @@ class DQN_Agent():
             gamma (float): discount factor
         """
         states, actions, rewards, next_states, dones = experiences
-
         # Get max predicted Q values (for next states) from target model
         Q_targets_next = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(1)
         # Compute Q targets for current states 

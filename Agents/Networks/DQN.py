@@ -20,14 +20,14 @@ class DQN(nn.Module):
         x = self.cnn_3(x)
         return x.flatten().shape[0]
     
-    def forward(self, x):
+    def forward(self, input):
         """
         
         """
-        x = torch.relu(self.cnn_1(x))
+        x = torch.relu(self.cnn_1(input))
         x = torch.relu(self.cnn_2(x))
         x = torch.relu(self.cnn_3(x))
-        x = x.flatten()
+        x = x.view(input.size(0), -1)
         x = torch.relu(self.ff_1(x))
         out = self.ff_2(x)
         
