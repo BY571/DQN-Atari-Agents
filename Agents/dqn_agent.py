@@ -11,7 +11,7 @@ import random
 class DQN_Agent():
     """Interacts with and learns from the environment."""
 
-    def __init__(self, state_size, action_size, BATCH_SIZE, BUFFER_SIZE,LR, TAU, GAMMA, device, seed, double=False):
+    def __init__(self, state_size, action_size, BATCH_SIZE, BUFFER_SIZE,LR, TAU, GAMMA, UPDATE_EVERY, device, seed, double=False):
         """Initialize an Agent object.
         
         Params
@@ -26,7 +26,10 @@ class DQN_Agent():
         self.device = device
         self.TAU = TAU
         self.GAMMA = GAMMA
+        self.UPDATE_EVERY = UPDATE_EVERY
 
+        self.action_step = 0
+        self.last_action = None
 
 	    # Q-Network
         self.qnetwork_local = DQN.DQN(state_size, action_size, seed).to(device)
@@ -52,24 +55,33 @@ class DQN_Agent():
                 self.learn(experiences)
 
     def act(self, state, eps=0.):
-        """Returns actions for given state as per current policy.
+        """Returns actions for given state as per current policy. Acting only every 4 frames!
         
         Params
         ======
             state (array_like): current state
             eps (float): epsilon, for epsilon-greedy action selection
         """
-        state = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
-        self.qnetwork_local.eval()
-        with torch.no_grad():
-            action_values = self.qnetwork_local(state)
-        self.qnetwork_local.train()
+        if self.action_step == 4:
+            state = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
+            self.qnetwork_local.eval()
+            with torch.no_grad():
+                action_values = self.qnetwork_local(state)
+            self.qnetwork_local.train()
 
-        # Epsilon-greedy action selection
-        if random.random() > eps:
-            return np.argmax(action_values.cpu().data.numpy())
+            # Epsilon-greedy action selection
+            if random.random() > eps:
+                action = np.argmax(action_values.cpu().data.numpy())
+                self.last_action = action
+                return action
+            else:
+                action = random.choice(np.arange(self.action_size))
+                self.last_action = action 
+                return action
+            self.action_step = 0
         else:
-            return random.choice(np.arange(self.action_size))
+            self.action_step += 1
+            return self.last_action
 
     def learn(self, experiences):
         """Update value parameters using given batch of experience tuples.

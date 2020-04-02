@@ -101,7 +101,7 @@ if __name__ == "__main__":
     action_size = env.action_space.n
     state_size = (4,84,84)
 
-    agent = DQN_Agent(state_size=state_size, action_size=action_size, BATCH_SIZE=BATCH_SIZE, BUFFER_SIZE=BUFFER_SIZE, LR=LR, TAU=TAU, GAMMA=GAMMA, device=device, seed=seed)
+    agent = DQN_Agent(state_size=state_size, action_size=action_size, BATCH_SIZE=BATCH_SIZE, BUFFER_SIZE=BUFFER_SIZE, LR=LR, TAU=TAU, GAMMA=GAMMA,UPDATE_EVERY=UPDATE_EVERY, device=device, seed=seed)
     t0 = time.time()
     scores = run(n_episodes = args.eps, eps_start=args.ep_start, eps_end=args.ep_end, eps_decay=args.ep_decay)
     t1 = time.time()
