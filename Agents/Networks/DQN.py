@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 
 class DQN(nn.Module):
-    def __init__(self, action_size, input_shape = (4,84,84)):
+    def __init__(self, state_size, action_size, seed):
         super(DQN, self).__init__()
-        self.input_shape = input_shape
+        self.input_shape = state_size
         self.action_size = action_size
         self.cnn_1 = nn.Conv2d(4, out_channels=32, kernel_size=8, stride=4)
         self.cnn_2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
