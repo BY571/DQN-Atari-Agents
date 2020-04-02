@@ -44,10 +44,10 @@ def run(n_episodes=1000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.99
         for t in range(max_t):
             action = agent.act(state, eps)
             next_state, reward, done, _ = env.step(action)
-            agent.step(state, action, reward, next_state, done)
             next_state = preprocess_img(next_state)
-            state = state[:3,:,:]
-            state = np.concatenate((new_state, state))
+            next_state = np.concatenate((next_state, state[:3,:,:]))
+            agent.step(state, action, reward, next_state, done)
+            state = next_state
             score += reward
             if done:
                 break 
@@ -57,10 +57,7 @@ def run(n_episodes=1000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.99
         print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_window)), end="")
         if i_episode % 100 == 0:
             print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_window)))
-        if np.mean(scores_window)>=200.0:
-            print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode-100, np.mean(scores_window)))
-            torch.save(agent.qnetwork_local.state_dict(), 'checkpoint.pth')
-            break
+
     return scores
 
 
@@ -70,7 +67,7 @@ if __name__ == "__main__":
     parser.add_argument("-env", type=str, default="Pong-v0", help="Name of the atari Environment, default = Pong-v0")
     parser.add_argument("-eps", type=int, default=500, help="Number of Episodes to train, default = 500")
     parser.add_argument("-seed", type=int, default=1, help="Random seed to replicate training runs, default = 1")
-    parser.add_argument("-bs", "--batch_size", type=int, default=256, help="Batch size for updating the DQN, default = 256")
+    parser.add_argument("-bs", "--batch_size", type=int, default=32, help="Batch size for updating the DQN, default = 32")
     parser.add_argument("-m", "--memory_size", type=int, default=int(1e6), help="Replay memory size, default = 1e6")
     parser.add_argument("-u", "--update_every", type=int, default=1, help="Update the network every x steps, default = 1")
     parser.add_argument("-lr", type=float, default=1e-3, help="Learning rate, default = 1e-3")
@@ -105,3 +102,4 @@ if __name__ == "__main__":
     t0 = time.time()
     scores = run(n_episodes = args.eps, eps_start=args.ep_start, eps_end=args.ep_end, eps_decay=args.ep_decay)
     t1 = time.time()
+    print("Training time: {}min".format((t1-t0)/60))
