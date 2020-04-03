@@ -18,9 +18,11 @@ def run_random_policy(random_frames):
     Run env with random policy for x frames to fill the replay memory.
     """
     state = env.reset()
+    action_translator = {0:0, 1:2, 2:3} 
     for frame in range(random_frames):
-        action = env.action_space.sample()
-        next_state, reward, done, _ = env.step(action)
+        action = np.random.randint(action_size)  #env.action_space.sample()
+        action_ = action_translator[action]
+        next_state, reward, done, _ = env.step(action_)
         agent.memory.add(state, action, reward, next_state, done)
         next_state = state
         if done:
@@ -41,14 +43,16 @@ def run(n_episodes=1000, eps_frames=1e6, min_eps=0.01):
     scores_window = deque(maxlen=100)  # last 100 scores
     frame = 0
     eps = 1
-    eps_start = 1                  
+    eps_start = 1
+    action_translator = {0:0, 1:2, 2:3}                  
     for i_episode in range(1, n_episodes+1):
         state = env.reset()
         plt.show()
         score = 0
         while True:
             action = agent.act(state, eps)
-            next_state, reward, done, _ = env.step(action)
+            action_ = action_translator[action.item()]
+            next_state, reward, done, _ = env.step(action_)
             agent.step(state, action, reward, next_state, done)
             state = next_state
             score += reward
@@ -104,7 +108,7 @@ if __name__ == "__main__":
     env.seed(seed)
     if not "ram" in args.env: 
         env = wrapper.wrap_deepmind(env)
-    action_size = env.action_space.n
+    action_size = 3#env.action_space.n
     state_size = env.observation_space.shape
 
     agent = DQN_Agent(state_size=state_size,

@@ -6,6 +6,7 @@ import torch
 import torch.nn
 import torch.optim as optim
 import torch.nn.functional as F
+from torch.nn.utils import clip_grad_norm_
 import random
 
 
@@ -72,7 +73,7 @@ class DQN_Agent():
             else:
                 self.qnetwork_local = DQN.Dueling_QNetwork(state_size, action_size, seed).to(device)
                 self.qnetwork_target = DQN.Dueling_QNetwork(state_size, action_size, seed).to(device)
-        self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR)
+        self.optimizer = optim.RMSprop(self.qnetwork_local.parameters(), lr=LR, alpha=0.9, eps=1e-02)
 
         # Replay memory
         self.memory = ReplayBuffer(BUFFER_SIZE, BATCH_SIZE, self.device, seed)
@@ -131,19 +132,18 @@ class DQN_Agent():
             experiences (Tuple[torch.Tensor]): tuple of (s, a, r, s', done) tuples 
             gamma (float): discount factor
         """
+        self.optimizer.zero_grad()
         states, actions, rewards, next_states, dones = experiences
         # Get max predicted Q values (for next states) from target model
         Q_targets_next = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(1)
         # Compute Q targets for current states 
         Q_targets = rewards + (self.GAMMA * Q_targets_next * (1 - dones))
-
         # Get expected Q values from local model
         Q_expected = self.qnetwork_local(states).gather(1, actions)
-
         # Compute loss
-        loss = F.mse_loss(Q_expected, Q_targets)
+        loss = F.smooth_l1_loss(Q_expected, Q_targets) #mse_loss
         # Minimize the loss
-        self.optimizer.zero_grad()
+        clip_grad_norm_(self.qnetwork_local.parameters(),1)
         loss.backward()
         self.optimizer.step()
 
