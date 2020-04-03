@@ -13,6 +13,9 @@ import argparse
 import time
 import matplotlib.pyplot as plt
 
+# ToDo:
+# adding 'pre-adding' replay buffer with random policy
+
 def run(n_episodes=1000, eps_frames=1e6, min_eps=0.01):
     """Deep Q-Learning.
     
@@ -26,15 +29,13 @@ def run(n_episodes=1000, eps_frames=1e6, min_eps=0.01):
     """
     scores = []                        # list containing scores from each episode
     scores_window = deque(maxlen=100)  # last 100 scores
-    eps = 1
-    eps_start = 1
     frame = 0                  
     for i_episode in range(1, n_episodes+1):
         state = env.reset()
         plt.show()
         score = 0
         while True:
-            action = agent.act(state, eps)
+            action = agent.act(state, frame)
             next_state, reward, done, _ = env.step(action)
             agent.step(state, action, reward, next_state, done)
             state = next_state
@@ -44,8 +45,7 @@ def run(n_episodes=1000, eps_frames=1e6, min_eps=0.01):
                 break 
         scores_window.append(score)       # save most recent score
         scores.append(score)              # save most recent score
-        eps = max(eps_start - (frame*(1/eps_frames)), min_eps)
-        writer.add_scalar("Epsilon", eps, i_episode)
+        writer.add_scalar("Epsilon", agent.eps, i_episode)
         writer.add_scalar("Reward", score, i_episode)
         writer.add_scalar("Average100", np.mean(scores_window), i_episode)
         print('\rEpisode {}\tFrame {} \tAverage Score: {:.2f}'.format(i_episode, frame, np.mean(scores_window)), end="")
@@ -57,7 +57,7 @@ def run(n_episodes=1000, eps_frames=1e6, min_eps=0.01):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-agent", type=str, choices=["dqn", "dueling"], default="dqn", help="Specify which type of DQN agent you want to train, default is DQN - baseline!")
+    parser.add_argument("-agent", type=str, choices=["dqn", "noisy_dqn", "dueling", "noisy_dueling" ], default="dqn", help="Specify which type of DQN agent you want to train, default is DQN - baseline!")
     parser.add_argument("-env", type=str, default="PongDeterministic-v4", help="Name of the atari Environment, default = Pong-v0")
     parser.add_argument("-eps", type=int, default=1000, help="Number of Episodes to train, default = 1000")
     parser.add_argument("-seed", type=int, default=1, help="Random seed to replicate training runs, default = 1")
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     action_size = env.action_space.n
     state_size = (4,84,84)
 
-    agent = DQN_Agent(state_size=state_size, action_size=action_size, Network=args.agent, BATCH_SIZE=BATCH_SIZE, BUFFER_SIZE=BUFFER_SIZE, LR=LR, TAU=TAU, GAMMA=GAMMA,UPDATE_EVERY=UPDATE_EVERY, device=device, seed=seed)
+    agent = DQN_Agent(state_size=state_size, action_size=action_size, Network=args.agent, BATCH_SIZE=BATCH_SIZE, BUFFER_SIZE=BUFFER_SIZE, eps_frames=args.eps_frames, min_eps=args.min_eps, LR=LR, TAU=TAU, GAMMA=GAMMA,UPDATE_EVERY=UPDATE_EVERY, device=device, seed=seed)
     
     t0 = time.time()
     scores = run(n_episodes = args.eps, eps_frames=args.eps_frames, min_eps=args.min_eps)

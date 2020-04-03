@@ -12,7 +12,20 @@ import random
 class DQN_Agent():
     """Interacts with and learns from the environment."""
 
-    def __init__(self, state_size, action_size, Network, BATCH_SIZE, BUFFER_SIZE,LR, TAU, GAMMA, UPDATE_EVERY, device, seed, double=False):
+    def __init__(self,
+                 state_size,
+                 action_size,
+                 Network,
+                 BATCH_SIZE,
+                 BUFFER_SIZE,
+                 eps_frames,
+                 min_eps,
+                 LR,
+                 TAU,
+                 GAMMA,
+                 UPDATE_EVERY,
+                 device,
+                 seed):
         """Initialize an Agent object.
         
         Params
@@ -29,18 +42,34 @@ class DQN_Agent():
         self.GAMMA = GAMMA
         self.UPDATE_EVERY = UPDATE_EVERY
         self.BATCH_SIZE = BATCH_SIZE
+        
+        self.eps = 1
+        self.eps_start = 1
+        self.eps_frames = eps_frames
+        self.min_eps = min_eps
+
+        if Network == "noisy_dqn" or "noisy_dueling": 
+            self.noisy = True
+        else: self.noisy = False
 
         self.action_step = 4
         self.last_action = None
 
 	    # Q-Network
         if Network == "dqn" or "noisy_dqn":
-            self.qnetwork_local = DQN.DQN(state_size, action_size, seed).to(device)
-            self.qnetwork_target = DQN.DQN(state_size, action_size, seed).to(device)
+            if Network == "noisy_dqn":
+                self.qnetwork_local = DQN.DQN(state_size, action_size, seed, layer_type="noisy").to(device)
+                self.qnetwork_target = DQN.DQN(state_size, action_size, seed, layer_type="noisy").to(device)
+            else:
+                self.qnetwork_local = DQN.DQN(state_size, action_size, seed).to(device)
+                self.qnetwork_target = DQN.DQN(state_size, action_size, seed).to(device)
         elif Network == "dueling" or "noisy_dueling":
-            self.qnetwork_local = DQN.Dueling_QNetwork(state_size, action_size, seed).to(device)
-            self.qnetwork_target = DQN.Dueling_QNetwork(state_size, action_size, seed).to(device)
-            
+            if Network == "noisy_dueling":
+                self.qnetwork_local = DQN.Dueling_QNetwork(state_size, action_size, seed, layer_type="noisy").to(device)
+                self.qnetwork_target = DQN.Dueling_QNetwork(state_size, action_size, seed, layer_type="noisy").to(device)
+            else:
+                self.qnetwork_local = DQN.Dueling_QNetwork(state_size, action_size, seed).to(device)
+                self.qnetwork_target = DQN.Dueling_QNetwork(state_size, action_size, seed).to(device)
         self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR)
 
         # Replay memory
@@ -60,14 +89,16 @@ class DQN_Agent():
                 experiences = self.memory.sample()
                 self.learn(experiences)
 
-    def act(self, state, eps=0.):
+    def act(self, state, frame):
         """Returns actions for given state as per current policy. Acting only every 4 frames!
         
         Params
         ======
+            frame: to adjust epsilon
             state (array_like): current state
-            eps (float): epsilon, for epsilon-greedy action selection
+            
         """
+
         if self.action_step == 4:
             state = np.array(state).reshape((4,84,84))
 
@@ -78,7 +109,7 @@ class DQN_Agent():
             self.qnetwork_local.train()
 
             # Epsilon-greedy action selection
-            if random.random() > eps:
+            if random.random() > self.eps or self.noisy: # select greedy action if random number is higher than epsilon or noisy network is used!
                 action = np.argmax(action_values.cpu().data.numpy())
                 self.last_action = action
                 return action
@@ -90,6 +121,8 @@ class DQN_Agent():
         else:
             self.action_step += 1
             return self.last_action
+        
+        self.eps = max(self.eps_start - (frame*(1/self.eps_frames)), self.min_eps)
 
     def learn(self, experiences):
         """Update value parameters using given batch of experience tuples.
