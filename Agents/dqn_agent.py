@@ -12,7 +12,7 @@ import random
 class DQN_Agent():
     """Interacts with and learns from the environment."""
 
-    def __init__(self, state_size, action_size, BATCH_SIZE, BUFFER_SIZE,LR, TAU, GAMMA, UPDATE_EVERY, device, seed, double=False):
+    def __init__(self, state_size, action_size, Network, BATCH_SIZE, BUFFER_SIZE,LR, TAU, GAMMA, UPDATE_EVERY, device, seed, double=False):
         """Initialize an Agent object.
         
         Params
@@ -34,9 +34,13 @@ class DQN_Agent():
         self.last_action = None
 
 	    # Q-Network
-        self.qnetwork_local = DQN.DQN(state_size, action_size, seed).to(device)
-        self.qnetwork_target = DQN.DQN(state_size, action_size, seed).to(device)
-
+        if Network == "dqn" or "noisy_dqn":
+            self.qnetwork_local = DQN.DQN(state_size, action_size, seed).to(device)
+            self.qnetwork_target = DQN.DQN(state_size, action_size, seed).to(device)
+        elif Network == "dueling" or "noisy_dueling":
+            self.qnetwork_local = DQN.Dueling_QNetwork(state_size, action_size, seed).to(device)
+            self.qnetwork_target = DQN.Dueling_QNetwork(state_size, action_size, seed).to(device)
+            
         self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR)
 
         # Replay memory
