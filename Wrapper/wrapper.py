@@ -202,8 +202,7 @@ class WarpFrame(gym.ObservationWrapper):
             frame, (self._width, self._height), interpolation=cv2.INTER_AREA
         )
         if self._grayscale:
-            frame = np.expand_dims(frame, -1)
-
+            frame = np.expand_dims(frame, 0)
         if self._key is None:
             obs = frame
         else:
@@ -224,7 +223,7 @@ class FrameStack(gym.Wrapper):
         self.k = k
         self.frames = deque([], maxlen=k)
         shp = env.observation_space.shape
-        self.observation_space = spaces.Box(low=0, high=255, shape=(shp[:-1] + (shp[-1] * k,)), dtype=env.observation_space.dtype)
+        self.observation_space = spaces.Box(low=0, high=255, shape=((shp[-1] * k,)+shp[:-1]), dtype=env.observation_space.dtype)
 
     def reset(self):
         ob = self.env.reset()
@@ -263,7 +262,7 @@ class LazyFrames(object):
 
     def _force(self):
         if self._out is None:
-            self._out = np.concatenate(self._frames, axis=-1)
+            self._out = np.concatenate(self._frames, axis=0)
             self._frames = None
         return self._out
 
