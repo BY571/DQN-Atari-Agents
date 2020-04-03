@@ -13,8 +13,18 @@ import argparse
 import time
 import matplotlib.pyplot as plt
 
-# ToDo:
-# adding 'pre-adding' replay buffer with random policy
+def run_random_policy(random_frames):
+    """
+    Run env with random policy for x frames to fill the replay memory.
+    """
+    state = env.reset()
+    for frame in range(random_frames):
+        action = env.action_space.sample()
+        next_state, reward, done, _ = env.step(action)
+        agent.memory.add(state, action, reward, next_state, done)
+        next_state = state
+        if done:
+            state = env.reset()
 
 def run(n_episodes=1000, eps_frames=1e6, min_eps=0.01):
     """Deep Q-Learning.
@@ -70,6 +80,7 @@ if __name__ == "__main__":
     parser.add_argument("-eps_frames", type=int, default=1e4, help="Linear annealed frames for Epsilon, default = 1e4")
     parser.add_argument("-min_eps", type=float, default = 0.1, help="Final epsilon greedy value, default = 0.1")
     parser.add_argument("-info", type=str, help="Name of the training run")
+    parser.add_argument("--fill_buffer", type=int, default=None, help="Adding samples to the replay buffer based on a random policy, before agent-env-interaction. Input numer of preadded frames to the buffer, default = None")
     parser.add_argument("-save_model", type=int, choices=[0,1], default=0, help="Specify if the trained network shall be saved or not, default is 0 - not saved!")
 
     args = parser.parse_args()
@@ -94,6 +105,11 @@ if __name__ == "__main__":
 
     agent = DQN_Agent(state_size=state_size, action_size=action_size, Network=args.agent, BATCH_SIZE=BATCH_SIZE, BUFFER_SIZE=BUFFER_SIZE, eps_frames=args.eps_frames, min_eps=args.min_eps, LR=LR, TAU=TAU, GAMMA=GAMMA,UPDATE_EVERY=UPDATE_EVERY, device=device, seed=seed)
     
+    # adding x frames of random policy to the replay buffer before training!
+    if args.fill_buffer != None:
+        run_random_policy(args.fill_buffer)
+        print("Buffer size: ", agent.memory.__len__())
+
     t0 = time.time()
     scores = run(n_episodes = args.eps, eps_frames=args.eps_frames, min_eps=args.min_eps)
     t1 = time.time()

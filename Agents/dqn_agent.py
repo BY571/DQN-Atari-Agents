@@ -32,6 +32,16 @@ class DQN_Agent():
         ======
             state_size (int): dimension of each state
             action_size (int): dimension of each action
+            Network (str): dqn network type
+            BATCH_SIZE (int): size of the training batch
+            BUFFER_SIZE (int): size of the replay memory
+            eps_frames (int): frames of linear epsilon greedy annealing
+            min_eps (float): minimal epsilon
+            LR (float): learning rate
+            TAU (float): tau for soft updating the network weights
+            GAMMA (float): discount factor
+            UPDATE_EVERY (int): update frequency
+            device (str): device that is used for the compute
             seed (int): random seed
         """
         self.state_size = state_size
@@ -87,7 +97,7 @@ class DQN_Agent():
             # If enough samples are available in memory, get random subset and learn
             if len(self.memory) > self.BATCH_SIZE:
                 experiences = self.memory.sample()
-                self.learn(experiences)
+                self.learn(experiences) 
 
     def act(self, state, frame):
         """Returns actions for given state as per current policy. Acting only every 4 frames!
@@ -117,7 +127,7 @@ class DQN_Agent():
                 action = random.choice(np.arange(self.action_size))
                 self.last_action = action 
                 return action
-            self.action_step = 0
+            #self.action_step = 0
         else:
             self.action_step += 1
             return self.last_action
