@@ -48,16 +48,30 @@ class DQN(nn.Module):
         self.seed = torch.manual_seed(seed)
         self.input_shape = state_size
         self.action_size = action_size
-        self.cnn_1 = nn.Conv2d(4, out_channels=32, kernel_size=8, stride=4)
-        self.cnn_2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
-        self.cnn_3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
-
-        if layer_type == "noisy":
-            self.ff_1 = NoisyLinear(self.calc_input_layer(), 512)
-            self.ff_2 = NoisyLinear(512, action_size)
+        self.state_dim = len(state_size)
+        if self.state_dim == 3:
+            self.cnn_1 = nn.Conv2d(4, out_channels=32, kernel_size=8, stride=4)
+            self.cnn_2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
+            self.cnn_3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
+            if layer_type == "noisy":
+                self.ff_1 = NoisyLinear(self.calc_input_layer(), 512)
+                self.ff_2 = NoisyLinear(512, action_size)
+            else:
+                self.ff_1 = nn.Linear(self.calc_input_layer(), 512)
+                self.ff_2 = nn.Linear(512, action_size)
+        elif self.state_dim == 1:
+            if layer_type == "noisy":
+                self.head_1 = NoisyLinear(self.input_shape[0], 512)
+                self.ff_1 = NoisyLinear(512, 512)
+                self.ff_2 = NoisyLinear(512, action_size)
+            else:
+                self.head_1 = nn.Linear(self.input_shape[0], 512)
+                self.ff_1 = nn.Linear(512, 512)
+                self.ff_2 = nn.Linear(512, action_size)
         else:
-            self.ff_1 = nn.Linear(self.calc_input_layer(), 512)
-            self.ff_2 = nn.Linear(512, action_size)
+            print("Unknown input dimension!")
+
+
         
     def calc_input_layer(self):
         x = torch.zeros(self.input_shape).unsqueeze(0)
@@ -70,10 +84,14 @@ class DQN(nn.Module):
         """
         
         """
-        x = torch.relu(self.cnn_1(input))
-        x = torch.relu(self.cnn_2(x))
-        x = torch.relu(self.cnn_3(x))
-        x = x.view(input.size(0), -1)
+        if self.state_dim == 3:
+            x = torch.relu(self.cnn_1(input))
+            x = torch.relu(self.cnn_2(x))
+            x = torch.relu(self.cnn_3(x))
+            x = x.view(input.size(0), -1)
+        else:
+            x = torch.relu(self.head_1(input))
+        
         x = torch.relu(self.ff_1(x))
         out = self.ff_2(x)
         
@@ -95,19 +113,33 @@ class Dueling_QNetwork(nn.Module):
         super(Dueling_QNetwork, self).__init__()
         self.seed = torch.manual_seed(seed)
         self.input_shape = state_size
+        self.state_dim = len(self.input_shape)
         self.action_size = action_size
-        self.cnn_1 = nn.Conv2d(4, out_channels=32, kernel_size=8, stride=4)
-        self.cnn_2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
-        self.cnn_3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
-
-        if layer_type == "noisy":
-            self.ff_1 = NoisyLinear(self.calc_input_layer(), 512)
-            self.advantage = NoisyLinear(512,action_size)
-            self.value = NoisyLinear(512,1)
+        if self.state_dim == 3:
+            self.cnn_1 = nn.Conv2d(4, out_channels=32, kernel_size=8, stride=4)
+            self.cnn_2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
+            self.cnn_3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
+            if layer_type == "noisy":
+                self.ff_1 = NoisyLinear(self.calc_input_layer(), 512)
+                self.advantage = NoisyLinear(512,action_size)
+                self.value = NoisyLinear(512,1)
+            else:
+                self.ff_1 = nn.Linear(self.calc_input_layer(), 512)
+                self.advantage = nn.Linear(512,action_size)
+                self.value = nn.Linear(512,1)
+        elif self.state_dim == 1:
+            if layer_type == "noisy":
+                self.head_1 = NoisyLinear(self.input_shape[0], 512)
+                self.ff_1 = NoisyLinear(512, 512)
+                self.advantage = NoisyLinear(512,action_size)
+                self.value = NoisyLinear(512,1)
+            else:
+                self.head_1 = nn.Linear(self.input_shape[0], 512)
+                self.ff_1 = nn.Linear(self.input_shape[0], 512)
+                self.advantage = nn.Linear(512,action_size)
+                self.value = nn.Linear(512,1)
         else:
-            self.ff_1 = nn.Linear(self.calc_input_layer(), 512)
-            self.advantage = nn.Linear(512,action_size)
-            self.value = nn.Linear(512,1)
+            print("Unknown input dimension!")
 
     def calc_input_layer(self):
         x = torch.zeros(self.input_shape).unsqueeze(0)
@@ -119,11 +151,14 @@ class Dueling_QNetwork(nn.Module):
     def forward(self, input):
         """
         """
-        x = torch.relu(self.cnn_1(input))
-        x = torch.relu(self.cnn_2(x))
-        x = torch.relu(self.cnn_3(x))
-        x = x.view(input.size(0), -1)
-        x = torch.relu(self.ff_1(x))
+        if self.state_dim == 3:
+            x = torch.relu(self.cnn_1(input))
+            x = torch.relu(self.cnn_2(x))
+            x = torch.relu(self.cnn_3(x))
+            x = x.view(input.size(0), -1)
+            x = torch.relu(self.ff_1(x))    
+        else:
+            x = torch.relu(self.head_1(input))
 
         value = self.value(x)
         value = value.expand(input.size(0), self.action_size)

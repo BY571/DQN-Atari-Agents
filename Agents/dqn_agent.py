@@ -18,8 +18,6 @@ class DQN_Agent():
                  Network,
                  BATCH_SIZE,
                  BUFFER_SIZE,
-                 eps_frames,
-                 min_eps,
                  LR,
                  TAU,
                  GAMMA,
@@ -35,8 +33,6 @@ class DQN_Agent():
             Network (str): dqn network type
             BATCH_SIZE (int): size of the training batch
             BUFFER_SIZE (int): size of the replay memory
-            eps_frames (int): frames of linear epsilon greedy annealing
-            min_eps (float): minimal epsilon
             LR (float): learning rate
             TAU (float): tau for soft updating the network weights
             GAMMA (float): discount factor
@@ -53,10 +49,6 @@ class DQN_Agent():
         self.UPDATE_EVERY = UPDATE_EVERY
         self.BATCH_SIZE = BATCH_SIZE
         
-        self.eps = 1
-        self.eps_start = 1
-        self.eps_frames = eps_frames
-        self.min_eps = min_eps
 
         if Network == "noisy_dqn" or "noisy_dueling": 
             self.noisy = True
@@ -99,7 +91,7 @@ class DQN_Agent():
                 experiences = self.memory.sample()
                 self.learn(experiences) 
 
-    def act(self, state, frame):
+    def act(self, state, eps=0.):
         """Returns actions for given state as per current policy. Acting only every 4 frames!
         
         Params
@@ -110,7 +102,7 @@ class DQN_Agent():
         """
 
         if self.action_step == 4:
-            state = np.array(state).reshape((4,84,84))
+            state = np.array(state)
 
             state = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
             self.qnetwork_local.eval()
@@ -119,7 +111,7 @@ class DQN_Agent():
             self.qnetwork_local.train()
 
             # Epsilon-greedy action selection
-            if random.random() > self.eps or self.noisy: # select greedy action if random number is higher than epsilon or noisy network is used!
+            if random.random() > eps or self.noisy: # select greedy action if random number is higher than epsilon or noisy network is used!
                 action = np.argmax(action_values.cpu().data.numpy())
                 self.last_action = action
                 return action
@@ -131,8 +123,6 @@ class DQN_Agent():
         else:
             self.action_step += 1
             return self.last_action
-        
-        self.eps = max(self.eps_start - (frame*(1/self.eps_frames)), self.min_eps)
 
     def learn(self, experiences):
         """Update value parameters using given batch of experience tuples.

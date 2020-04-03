@@ -39,13 +39,15 @@ def run(n_episodes=1000, eps_frames=1e6, min_eps=0.01):
     """
     scores = []                        # list containing scores from each episode
     scores_window = deque(maxlen=100)  # last 100 scores
-    frame = 0                  
+    frame = 0
+    eps = 1
+    eps_start = 1                  
     for i_episode in range(1, n_episodes+1):
         state = env.reset()
         plt.show()
         score = 0
         while True:
-            action = agent.act(state, frame)
+            action = agent.act(state, eps)
             next_state, reward, done, _ = env.step(action)
             agent.step(state, action, reward, next_state, done)
             state = next_state
@@ -55,7 +57,8 @@ def run(n_episodes=1000, eps_frames=1e6, min_eps=0.01):
                 break 
         scores_window.append(score)       # save most recent score
         scores.append(score)              # save most recent score
-        writer.add_scalar("Epsilon", agent.eps, i_episode)
+        eps = max(eps_start - (frame*(1/eps_frames)), min_eps)
+        writer.add_scalar("Epsilon", eps, i_episode)
         writer.add_scalar("Reward", score, i_episode)
         writer.add_scalar("Average100", np.mean(scores_window), i_episode)
         print('\rEpisode {}\tFrame {} \tAverage Score: {:.2f}'.format(i_episode, frame, np.mean(scores_window)), end="")
@@ -99,20 +102,33 @@ if __name__ == "__main__":
 
     env = gym.make(args.env)
     env.seed(seed)
-    env = wrapper.wrap_deepmind(env)
+    if not "ram" in args.env: 
+        env = wrapper.wrap_deepmind(env)
     action_size = env.action_space.n
-    state_size = (4,84,84)
+    state_size = env.observation_space.shape
 
-    agent = DQN_Agent(state_size=state_size, action_size=action_size, Network=args.agent, BATCH_SIZE=BATCH_SIZE, BUFFER_SIZE=BUFFER_SIZE, eps_frames=args.eps_frames, min_eps=args.min_eps, LR=LR, TAU=TAU, GAMMA=GAMMA,UPDATE_EVERY=UPDATE_EVERY, device=device, seed=seed)
+    agent = DQN_Agent(state_size=state_size,
+                      action_size=action_size,
+                      Network=args.agent, 
+                      BATCH_SIZE=BATCH_SIZE, 
+                      BUFFER_SIZE=BUFFER_SIZE, 
+                      LR=LR, 
+                      TAU=TAU, 
+                      GAMMA=GAMMA, 
+                      UPDATE_EVERY=UPDATE_EVERY, 
+                      device=device, 
+                      seed=seed)
     
     # adding x frames of random policy to the replay buffer before training!
     if args.fill_buffer != None:
         run_random_policy(args.fill_buffer)
         print("Buffer size: ", agent.memory.__len__())
 
+
     t0 = time.time()
     scores = run(n_episodes = args.eps, eps_frames=args.eps_frames, min_eps=args.min_eps)
     t1 = time.time()
+    
     print("Training time: {}min".format((t1-t0)/60))
     if args.save_model:
         torch.save(agent.qnetwork_local.state_dict(), str(args.info))
