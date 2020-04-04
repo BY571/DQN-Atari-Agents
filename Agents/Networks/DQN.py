@@ -42,9 +42,9 @@ class NoisyLinear(nn.Linear):
             bias = bias + self.sigma_bias * self.epsilon_bias
         return F.linear(input, self.weight + self.sigma_weight * self.epsilon_weight, bias)
 
-class DQN(nn.Module):
+class DDQN(nn.Module):
     def __init__(self, state_size, action_size, seed, layer_type="ff"):
-        super(DQN, self).__init__()
+        super(DDQN, self).__init__()
         self.seed = torch.manual_seed(seed)
         self.input_shape = state_size
         self.action_size = action_size
@@ -135,7 +135,7 @@ class Dueling_QNetwork(nn.Module):
                 self.value = NoisyLinear(512,1)
             else:
                 self.head_1 = nn.Linear(self.input_shape[0], 512)
-                self.ff_1 = nn.Linear(self.input_shape[0], 512)
+                self.ff_1 = nn.Linear(512, 512)
                 self.advantage = nn.Linear(512,action_size)
                 self.value = nn.Linear(512,1)
         else:
@@ -159,6 +159,7 @@ class Dueling_QNetwork(nn.Module):
             x = torch.relu(self.ff_1(x))    
         else:
             x = torch.relu(self.head_1(input))
+            x = torch.relu(self.ff_1(x))    
 
         value = self.value(x)
         value = value.expand(input.size(0), self.action_size)

@@ -59,22 +59,20 @@ class DQN_Agent():
         self.last_action = None
 
 	    # Q-Network
-        if Network == "dqn" or "noisy_dqn":
-            if Network == "noisy_dqn":
-                self.qnetwork_local = DQN.DQN(state_size, action_size, seed, layer_type="noisy").to(device)
-                self.qnetwork_target = DQN.DQN(state_size, action_size, seed, layer_type="noisy").to(device)
-            else:
-                self.qnetwork_local = DQN.DQN(state_size, action_size, seed).to(device)
-                self.qnetwork_target = DQN.DQN(state_size, action_size, seed).to(device)
-        elif Network == "dueling" or "noisy_dueling":
-            if Network == "noisy_dueling":
-                self.qnetwork_local = DQN.Dueling_QNetwork(state_size, action_size, seed, layer_type="noisy").to(device)
-                self.qnetwork_target = DQN.Dueling_QNetwork(state_size, action_size, seed, layer_type="noisy").to(device)
-            else:
+        if Network == "noisy_dqn":
+            self.qnetwork_local = DQN.DDQN(state_size, action_size, seed, layer_type="noisy").to(device)
+            self.qnetwork_target = DQN.DDQN(state_size, action_size, seed, layer_type="noisy").to(device)
+        if Network == "dqn":
+                self.qnetwork_local = DQN.DDQN(state_size, action_size, seed).to(device)
+                self.qnetwork_target = DQN.DDQN(state_size, action_size, seed).to(device)
+        if Network == "noisy_dueling":
+            self.qnetwork_local = DQN.Dueling_QNetwork(state_size, action_size, seed, layer_type="noisy").to(device)
+            self.qnetwork_target = DQN.Dueling_QNetwork(state_size, action_size, seed, layer_type="noisy").to(device)
+        if Network == "dueling":
                 self.qnetwork_local = DQN.Dueling_QNetwork(state_size, action_size, seed).to(device)
                 self.qnetwork_target = DQN.Dueling_QNetwork(state_size, action_size, seed).to(device)
-        self.optimizer = optim.RMSprop(self.qnetwork_local.parameters(), lr=LR, alpha=0.9, eps=1e-02)
-
+        self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR)
+        print(self.qnetwork_local)
         # Replay memory
         self.memory = ReplayBuffer(BUFFER_SIZE, BATCH_SIZE, self.device, seed)
         # Initialize time step (for updating every UPDATE_EVERY steps)
@@ -143,7 +141,7 @@ class DQN_Agent():
         # Compute loss
         loss = F.smooth_l1_loss(Q_expected, Q_targets) #mse_loss
         # Minimize the loss
-        clip_grad_norm_(self.qnetwork_local.parameters(),1)
+        #clip_grad_norm_(self.qnetwork_local.parameters(),1)
         loss.backward()
         self.optimizer.step()
 

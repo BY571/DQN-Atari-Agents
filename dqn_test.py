@@ -19,16 +19,16 @@ def run_random_policy(random_frames):
     """
     state = env.reset()
     action_translator = {0:0, 1:2, 2:3} 
-    for frame in range(random_frames):
+    for i in range(random_frames):
         action = np.random.randint(action_size)  #env.action_space.sample()
-        action_ = action_translator[action]
-        next_state, reward, done, _ = env.step(action_)
+        #action_ = action_translator[action]
+        next_state, reward, done, _ = env.step(action)#_)
         agent.memory.add(state, action, reward, next_state, done)
         next_state = state
         if done:
             state = env.reset()
 
-def run(n_episodes=1000, eps_frames=1e6, min_eps=0.01):
+def run(frames=1000, eps_frames=1e6, min_eps=0.01):
     """Deep Q-Learning.
     
     Params
@@ -44,36 +44,36 @@ def run(n_episodes=1000, eps_frames=1e6, min_eps=0.01):
     frame = 0
     eps = 1
     eps_start = 1
-    action_translator = {0:0, 1:2, 2:3}                  
-    for i_episode in range(1, n_episodes+1):
-        state = env.reset()
-        plt.show()
-        score = 0
-        while True:
-            action = agent.act(state, eps)
-            action_ = action_translator[action.item()]
-            next_state, reward, done, _ = env.step(action_)
-            agent.step(state, action, reward, next_state, done)
-            state = next_state
-            score += reward
-            frame += 1
-            if done:
-                break 
-        scores_window.append(score)       # save most recent score
-        scores.append(score)              # save most recent score
+    action_translator = {0:0, 1:2, 2:3}
+    i_episode = 1
+    state = env.reset()
+    score = 0                  
+    for frame in range(1, frames+1):
+
+        action = agent.act(state, eps)
+        #action_ = action_translator[action.item()]
+        next_state, reward, done, _ = env.step(action) #_
+        agent.step(state, action, reward, next_state, done)
+        state = next_state
+        score += reward
         # linear annealing to the min epsilon value until eps_frames and from there slowly decease epsilon to 0 until the end of training
         if frame < eps_frames:
             eps = max(eps_start - (frame*(1/eps_frames)), min_eps)
-        elif frame == eps_frames:
-            slow_decay_point = i_episode
-        else:
-            eps = min_eps - ((i_episode-slow_decay_point)/(n_episodes-slow_decay_point))
-        writer.add_scalar("Epsilon", eps, i_episode)
-        writer.add_scalar("Reward", score, i_episode)
-        writer.add_scalar("Average100", np.mean(scores_window), i_episode)
-        print('\rEpisode {}\tFrame {} \tAverage Score: {:.2f}'.format(i_episode, frame, np.mean(scores_window)), end="")
-        if i_episode % 100 == 0:
-            print('\rEpisode {}\tFrame {}\tAverage Score: {:.2f}'.format(i_episode,frame, np.mean(scores_window)))
+        #else:
+        #    eps = min_eps - ((frame-eps_frames)/(frames-eps_frames))
+
+        if done:
+            scores_window.append(score)       # save most recent score
+            scores.append(score)              # save most recent score
+            writer.add_scalar("Epsilon", eps, i_episode)
+            writer.add_scalar("Reward", score, i_episode)
+            writer.add_scalar("Average100", np.mean(scores_window), i_episode)
+            print('\rEpisode {}\tFrame {} \tAverage Score: {:.2f}'.format(i_episode, frame, np.mean(scores_window)), end="")
+            if i_episode % 100 == 0:
+                print('\rEpisode {}\tFrame {}\tAverage Score: {:.2f}'.format(i_episode,frame, np.mean(scores_window)))
+            i_episode +=1 
+            state = env.reset()
+            score = 0              
 
     return scores
 
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-agent", type=str, choices=["dqn", "noisy_dqn", "dueling", "noisy_dueling" ], default="dqn", help="Specify which type of DQN agent you want to train, default is DQN - baseline!")
     parser.add_argument("-env", type=str, default="PongDeterministic-v4", help="Name of the atari Environment, default = Pong-v0")
-    parser.add_argument("-eps", type=int, default=1000, help="Number of Episodes to train, default = 1000")
+    parser.add_argument("-frames", type=int, default=int(5e6), help="Number of frames to train, default = 5 mio")
     parser.add_argument("-seed", type=int, default=1, help="Random seed to replicate training runs, default = 1")
     parser.add_argument("-bs", "--batch_size", type=int, default=32, help="Batch size for updating the DQN, default = 32")
     parser.add_argument("-m", "--memory_size", type=int, default=int(1e6), help="Replay memory size, default = 1e6")
@@ -112,9 +112,9 @@ if __name__ == "__main__":
 
     env = gym.make(args.env)
     env.seed(seed)
-    if not "ram" in args.env: 
+    if not "ram" in args.env and args.env != "CartPole-v0": 
         env = wrapper.wrap_deepmind(env)
-    action_size = 3#env.action_space.n
+    action_size = env.action_space.n # 3
     state_size = env.observation_space.shape
 
     agent = DQN_Agent(state_size=state_size,
@@ -136,7 +136,7 @@ if __name__ == "__main__":
 
 
     t0 = time.time()
-    scores = run(n_episodes = args.eps, eps_frames=args.eps_frames, min_eps=args.min_eps)
+    scores = run(frames = args.frames, eps_frames=args.eps_frames, min_eps=args.min_eps)
     t1 = time.time()
     
     print("Training time: {}min".format((t1-t0)/60))
