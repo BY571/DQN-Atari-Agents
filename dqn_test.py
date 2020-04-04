@@ -61,7 +61,13 @@ def run(n_episodes=1000, eps_frames=1e6, min_eps=0.01):
                 break 
         scores_window.append(score)       # save most recent score
         scores.append(score)              # save most recent score
-        eps = max(eps_start - (frame*(1/eps_frames)), min_eps)
+        # linear annealing to the min epsilon value until eps_frames and from there slowly decease epsilon to 0 until the end of training
+        if frame < eps_frames:
+            eps = max(eps_start - (frame*(1/eps_frames)), min_eps)
+        elif frame == eps_frames:
+            slow_decay_point = i_episode
+        else:
+            eps = min_eps - ((i_episode-slow_decay_point)/(n_episodes-slow_decay_point))
         writer.add_scalar("Epsilon", eps, i_episode)
         writer.add_scalar("Reward", score, i_episode)
         writer.add_scalar("Average100", np.mean(scores_window), i_episode)
