@@ -166,3 +166,89 @@ class Dueling_QNetwork(nn.Module):
         advantage = self.advantage(x)
         Q = value + advantage - advantage.mean()
         return Q
+
+class Dueling_C51Network(nn.Module):
+    """Actor (Policy) Model."""
+
+    def __init__(self, state_size, action_size, seed, layer_type="ff", N_ATOMS=51, VMAX=10, VMIN=-10):
+        """Initialize parameters and build model.
+        Params
+        ======
+            state_size (int): Dimension of each state
+            action_size (int): Dimension of each action
+            seed (int): Random seed
+            fc1_units (int): Number of nodes in first hidden layer
+            fc2_units (int): Number of nodes in second hidden layer
+        """
+        super(Dueling_C51Network, self).__init__()
+        self.seed = torch.manual_seed(seed)
+        self.input_shape = state_size
+        self.state_dim = len(self.input_shape)
+        self.action_size = action_size
+        self.N_ATOMS = N_ATOMS
+        self.VMAX = VMAX
+        self.VMIN = VMIN
+        self.DZ = (VMAX-VMIN) / (N_ATOMS - 1)
+
+
+        if self.state_dim == 3:
+            self.cnn_1 = nn.Conv2d(4, out_channels=32, kernel_size=8, stride=4)
+            self.cnn_2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
+            self.cnn_3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
+
+            if layer_type == "noisy":
+                self.ff_1 = NoisyLinear(self.calc_input_layer(), 512)
+                self.advantage = NoisyLinear(512,action_size*N_ATOMS)
+                self.value = NoisyLinear(512,N_ATOMS)
+            else:
+                self.ff_1 = nn.Linear(self.calc_input_layer(), 512)
+                self.advantage = nn.Linear(512,action_size*N_ATOMS)
+                self.value = nn.Linear(512,N_ATOMS)
+
+        elif self.state_dim == 1:
+            if layer_type == "noisy":
+                self.head_1 = NoisyLinear(self.input_shape[0], 512)
+                self.ff_1 = NoisyLinear(512, 512)
+                self.advantage = NoisyLinear(512,action_size*N_ATOMS)
+                self.value = NoisyLinear(512,N_ATOMS)
+            else:
+                self.head_1 = nn.Linear(self.input_shape[0], 512)
+                self.ff_1 = nn.Linear(512, 512)
+                self.advantage = nn.Linear(512,action_size*N_ATOMS)
+                self.value = nn.Linear(512,N_ATOMS)
+        else:
+            print("Unknown input dimension!")
+
+        self.register_buffer("supports", torch.arange(VMIN, VMAX+self.DZ, self.DZ)) # basic value vector - shape n_atoms stepsize dz
+        self.softmax = nn.Softmax(dim = 1)
+        
+    def calc_input_layer(self):
+        x = torch.zeros(self.input_shape).unsqueeze(0)
+        x = self.cnn_1(x)
+        x = self.cnn_2(x)
+        x = self.cnn_3(x)
+        return x.flatten().shape[0]
+
+    def forward(self, input):
+        batch_size = input.size()[0]
+        if self.state_dim == 3:
+            x = torch.relu(self.cnn_1(input))
+            x = torch.relu(self.cnn_2(x))
+            x = torch.relu(self.cnn_3(x))
+            x = x.view(input.size(0), -1)
+            x = torch.relu(self.ff_1(x))    
+        else:
+            x = torch.relu(self.head_1(input))
+            x = torch.relu(self.ff_1(x))  
+        value = self.value(x).view(batch_size,1,self.N_ATOMS)
+        advantage = self.advantage(x).view(batch_size,-1, self.N_ATOMS)
+        
+        q_distr = value + advantage - advantage.mean(dim = 1, keepdim = True)
+        prob = F.softmax(q_distr.view(-1, self.N_ATOMS)).view(-1, self.action_size, self.N_ATOMS)
+        return prob
+      
+    def act(self,state):
+      prob = self.forward(state).data.cpu()
+      expected_value = prob * self.supports
+      actions = expected_value.sum(2)
+      return actions
