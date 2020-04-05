@@ -214,11 +214,11 @@ class DQN_C51Agent():
 
 	    # Q-Network
         if Network == "noisy_c51":
-            self.qnetwork_local = DQN.DDQN(state_size, action_size, seed, layer_type="noisy").to(device)
-            self.qnetwork_target = DQN.DDQN(state_size, action_size, seed, layer_type="noisy").to(device)
+            self.qnetwork_local = DQN.DDQN_C51(state_size, action_size, seed, layer_type="noisy").to(device)
+            self.qnetwork_target = DQN.DDQN_C51(state_size, action_size, seed, layer_type="noisy").to(device)
         if Network == "c51":
-                self.qnetwork_local = DQN.DDQN(state_size, action_size, seed).to(device)
-                self.qnetwork_target = DQN.DDQN(state_size, action_size, seed).to(device)
+                self.qnetwork_local = DQN.DDQN_C51(state_size, action_size, seed).to(device)
+                self.qnetwork_target = DQN.DDQN_C51(state_size, action_size, seed).to(device)
         if Network == "noisy_duelingc51":
             self.qnetwork_local = DQN.Dueling_C51Network(state_size, action_size, seed, layer_type="noisy").to(device)
             self.qnetwork_target = DQN.Dueling_C51Network(state_size, action_size, seed, layer_type="noisy").to(device)
