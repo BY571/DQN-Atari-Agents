@@ -17,12 +17,10 @@ def run_random_policy(random_frames):
     """
     Run env with random policy for x frames to fill the replay memory.
     """
-    state = env.reset()
-    action_translator = {0:0, 1:2, 2:3} 
+    state = env.reset() 
     for i in range(random_frames):
         action = np.random.randint(action_size)  #env.action_space.sample()
-        #action_ = action_translator[action]
-        next_state, reward, done, _ = env.step(action)#_)
+        next_state, reward, done, _ = env.step(action)
         agent.memory.add(state, action, reward, next_state, done)
         next_state = state
         if done:
@@ -44,15 +42,13 @@ def run(frames=1000, eps_frames=1e6, min_eps=0.01):
     frame = 0
     eps = 1
     eps_start = 1
-    action_translator = {0:0, 1:2, 2:3}
     i_episode = 1
     state = env.reset()
     score = 0                  
     for frame in range(1, frames+1):
 
         action = agent.act(state, eps)
-        #action_ = action_translator[action.item()]
-        next_state, reward, done, _ = env.step(action) #_
+        next_state, reward, done, _ = env.step(action)
         agent.step(state, action, reward, next_state, done)
         state = next_state
         score += reward
@@ -85,15 +81,15 @@ if __name__ == "__main__":
     parser.add_argument("-frames", type=int, default=int(5e6), help="Number of frames to train, default = 5 mio")
     parser.add_argument("-seed", type=int, default=1, help="Random seed to replicate training runs, default = 1")
     parser.add_argument("-bs", "--batch_size", type=int, default=32, help="Batch size for updating the DQN, default = 32")
-    parser.add_argument("-m", "--memory_size", type=int, default=int(1e6), help="Replay memory size, default = 1e6")
-    parser.add_argument("-u", "--update_every", type=int, default=1, help="Update the network every x steps, default = 1")
-    parser.add_argument("-lr", type=float, default=5e-4, help="Learning rate, default = 5e-4")
+    parser.add_argument("-m", "--memory_size", type=int, default=int(1e5), help="Replay memory size, default = 1e5")
+    parser.add_argument("-u", "--update_every", type=int, default=4, help="Update the network every x steps, default = 4")
+    parser.add_argument("-lr", type=float, default=0.00025, help="Learning rate, default = 0.00025")
     parser.add_argument("-g", "--gamma", type=float, default=0.99, help="Discount factor gamma, default = 0.99")
     parser.add_argument("-t", "--tau", type=float, default=1e-3, help="Soft update parameter tat, default = 1e-3")
-    parser.add_argument("-eps_frames", type=int, default=1e4, help="Linear annealed frames for Epsilon, default = 1e4")
-    parser.add_argument("-min_eps", type=float, default = 0.1, help="Final epsilon greedy value, default = 0.1")
+    parser.add_argument("-eps_frames", type=int, default=2e5, help="Linear annealed frames for Epsilon, default = 2e5")
+    parser.add_argument("-min_eps", type=float, default = 0.05, help="Final epsilon greedy value, default = 0.1")
     parser.add_argument("-info", type=str, help="Name of the training run")
-    parser.add_argument("--fill_buffer", type=int, default=None, help="Adding samples to the replay buffer based on a random policy, before agent-env-interaction. Input numer of preadded frames to the buffer, default = None")
+    parser.add_argument("--fill_buffer", type=int, default=50000, help="Adding samples to the replay buffer based on a random policy, before agent-env-interaction. Input numer of preadded frames to the buffer, default = 50000")
     parser.add_argument("-save_model", type=int, choices=[0,1], default=0, help="Specify if the trained network shall be saved or not, default is 0 - not saved!")
 
     args = parser.parse_args()
@@ -114,7 +110,7 @@ if __name__ == "__main__":
     env.seed(seed)
     if not "ram" in args.env and args.env != "CartPole-v0": 
         env = wrapper.wrap_deepmind(env)
-    action_size = env.action_space.n # 3
+    action_size     = env.action_space.n
     state_size = env.observation_space.shape
 
     agent = DQN_Agent(state_size=state_size,

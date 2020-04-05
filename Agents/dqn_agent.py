@@ -71,7 +71,7 @@ class DQN_Agent():
         if Network == "dueling":
                 self.qnetwork_local = DQN.Dueling_QNetwork(state_size, action_size, seed).to(device)
                 self.qnetwork_target = DQN.Dueling_QNetwork(state_size, action_size, seed).to(device)
-        self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR)
+        self.optimizer = optim.RMSprop(self.qnetwork_local.parameters(), lr=LR, alpha=0.95, eps=0.01)
         print(self.qnetwork_local)
         # Replay memory
         self.memory = ReplayBuffer(BUFFER_SIZE, BATCH_SIZE, self.device, seed)
