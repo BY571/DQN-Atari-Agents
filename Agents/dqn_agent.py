@@ -199,6 +199,10 @@ class DQN_C51Agent():
         self.GAMMA = GAMMA
         self.UPDATE_EVERY = UPDATE_EVERY
         self.BATCH_SIZE = BATCH_SIZE
+
+        self.N_ATOMS = 51
+        self.VMAX = 10
+        self.VMIN = -10
         
 
         if Network == "noisy_dqn" or "noisy_dueling": 
@@ -222,7 +226,7 @@ class DQN_C51Agent():
                 self.qnetwork_local = DQN.Dueling_C51Network(state_size, action_size, seed).to(device)
                 self.qnetwork_target = DQN.Dueling_C51Network(state_size, action_size, seed).to(device)
 
-        self.optimizer = optim.RMSprop(self.qnetwork_local.parameters(), lr=LR, alpha=0.95, eps=0.01)
+        self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR)#, alpha=0.95, eps=0.01)
         print(self.qnetwork_local)
         # Replay memory
         self.memory = ReplayBuffer(BUFFER_SIZE, BATCH_SIZE, self.device, seed)
@@ -237,20 +241,20 @@ class DQN_C51Agent():
         support = torch.linspace(self.VMIN, self.VMAX, self.N_ATOMS)
         rewards = rewards.expand_as(next_distr)
         dones   = dones.expand_as(next_distr)
-        support = support.unsqueeze(0).expand_as(next_distr)
+        support = support.unsqueeze(0).expand_as(next_distr).to(self.device)
         ## Compute the projection of T̂ z onto the support {z_i}
-        Tz = rewards + (1 - dones) * gamma * support
+        Tz = rewards + (1 - dones) * self.GAMMA * support
         Tz = Tz.clamp(min=self.VMIN, max=self.VMAX)
-        b  = (Tz - self.VMIN) / delta_z
-        l  = b.floor().long()
-        u  = b.ceil().long()
+        b  = ((Tz - self.VMIN) / delta_z).cpu()#.to(self.device)
+        l  = b.floor().long().cpu()#.to(self.device)
+        u  = b.ceil().long().cpu()#.to(self.device)
 
         offset = torch.linspace(0, (batch_size - 1) * self.N_ATOMS, batch_size).long()\
                         .unsqueeze(1).expand(batch_size, self.N_ATOMS)
         # Distribute probability of T̂ z
-        proj_dist = torch.zeros(next_distr.size())    
-        proj_dist.view(-1).index_add_(0, (l + offset).view(-1), (next_distr * (u.float() - b)).view(-1))
-        proj_dist.view(-1).index_add_(0, (u + offset).view(-1), (next_distr * (b - l.float())).view(-1))
+        proj_dist = torch.zeros(next_distr.size()) 
+        proj_dist.view(-1).index_add_(0, (l + offset).view(-1), (next_distr.cpu() * (u.float() - b)).view(-1))
+        proj_dist.view(-1).index_add_(0, (u + offset).view(-1), (next_distr.cpu() * (b - l.float())).view(-1))
 
         return proj_dist
     
@@ -282,7 +286,7 @@ class DQN_C51Agent():
             state = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
             self.qnetwork_local.eval()
             with torch.no_grad():
-                action_values = self.qnetwork_local(state)
+                action_values = self.qnetwork_local.act(state)
             self.qnetwork_local.train()
 
             # Epsilon-greedy action selection
@@ -317,7 +321,7 @@ class DQN_C51Agent():
         # gather best distr
         next_best_distr = next_distr[range(batch_size), next_actions]
 
-        proj_distr = self.projection_distribution(next_best_distr, next_states, rewards, dones, self.GAMMA)
+        proj_distr = self.projection_distribution(next_best_distr, next_states, rewards, dones).to(self.device)
 
         # Compute loss
         # calculates the prob_distribution for the actions based on the given state

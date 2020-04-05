@@ -3,10 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 
-def hidden_init(layer):
-    fan_in = layer.weight.data.size()[0]
-    lim = 1. / np.sqrt(fan_in)
-    return (-lim, lim)
+def weight_init(layers):
+    for layer in layers:
+        torch.nn.init.kaiming_normal_(layer.weight, nonlinearity='relu')
+
 
 class NoisyLinear(nn.Linear):
     # Noisy Linear Layer for independent Gaussian Noise
@@ -53,12 +53,15 @@ class DDQN(nn.Module):
             self.cnn_1 = nn.Conv2d(4, out_channels=32, kernel_size=8, stride=4)
             self.cnn_2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
             self.cnn_3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
+            weight_init([self.cnn_1, self.cnn_2, self.cnn_3])
+
             if layer_type == "noisy":
                 self.ff_1 = NoisyLinear(self.calc_input_layer(), 512)
                 self.ff_2 = NoisyLinear(512, action_size)
             else:
                 self.ff_1 = nn.Linear(self.calc_input_layer(), 512)
                 self.ff_2 = nn.Linear(512, action_size)
+                weight_init([self.ff_1])
         elif self.state_dim == 1:
             if layer_type == "noisy":
                 self.head_1 = NoisyLinear(self.input_shape[0], 512)
@@ -68,6 +71,7 @@ class DDQN(nn.Module):
                 self.head_1 = nn.Linear(self.input_shape[0], 512)
                 self.ff_1 = nn.Linear(512, 512)
                 self.ff_2 = nn.Linear(512, action_size)
+                weight_init([self.head_1, self.ff_1])
         else:
             print("Unknown input dimension!")
 
@@ -119,25 +123,30 @@ class Dueling_QNetwork(nn.Module):
             self.cnn_1 = nn.Conv2d(4, out_channels=32, kernel_size=8, stride=4)
             self.cnn_2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
             self.cnn_3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
+            weight_init([self.cnn_1, self.cnn_2, self.cnn_3])
             if layer_type == "noisy":
                 self.ff_1 = NoisyLinear(self.calc_input_layer(), 512)
                 self.advantage = NoisyLinear(512,action_size)
                 self.value = NoisyLinear(512,1)
+                weight_init([self.ff_1])
             else:
                 self.ff_1 = nn.Linear(self.calc_input_layer(), 512)
                 self.advantage = nn.Linear(512,action_size)
                 self.value = nn.Linear(512,1)
+                weight_init([self.ff_1])
         elif self.state_dim == 1:
             if layer_type == "noisy":
                 self.head_1 = NoisyLinear(self.input_shape[0], 512)
                 self.ff_1 = NoisyLinear(512, 512)
                 self.advantage = NoisyLinear(512,action_size)
                 self.value = NoisyLinear(512,1)
+                weight_init([self.head_1,self.ff_1])
             else:
                 self.head_1 = nn.Linear(self.input_shape[0], 512)
                 self.ff_1 = nn.Linear(512, 512)
                 self.advantage = nn.Linear(512,action_size)
                 self.value = nn.Linear(512,1)
+                weight_init([self.head_1,self.ff_1])
         else:
             print("Unknown input dimension!")
 
@@ -195,27 +204,31 @@ class Dueling_C51Network(nn.Module):
             self.cnn_1 = nn.Conv2d(4, out_channels=32, kernel_size=8, stride=4)
             self.cnn_2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
             self.cnn_3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
+            weight_init([self.cnn_1, self.cnn_2, self.cnn_3])
 
             if layer_type == "noisy":
                 self.ff_1 = NoisyLinear(self.calc_input_layer(), 512)
                 self.advantage = NoisyLinear(512,action_size*N_ATOMS)
                 self.value = NoisyLinear(512,N_ATOMS)
+                weight_init([self.ff_1])
             else:
                 self.ff_1 = nn.Linear(self.calc_input_layer(), 512)
                 self.advantage = nn.Linear(512,action_size*N_ATOMS)
                 self.value = nn.Linear(512,N_ATOMS)
-
+                weight_init([self.ff_1])
         elif self.state_dim == 1:
             if layer_type == "noisy":
                 self.head_1 = NoisyLinear(self.input_shape[0], 512)
                 self.ff_1 = NoisyLinear(512, 512)
                 self.advantage = NoisyLinear(512,action_size*N_ATOMS)
                 self.value = NoisyLinear(512,N_ATOMS)
+                weight_init([self.head_1,self.ff_1])
             else:
                 self.head_1 = nn.Linear(self.input_shape[0], 512)
                 self.ff_1 = nn.Linear(512, 512)
                 self.advantage = nn.Linear(512,action_size*N_ATOMS)
                 self.value = nn.Linear(512,N_ATOMS)
+                weight_init([self.head_1,self.ff_1])
         else:
             print("Unknown input dimension!")
 
@@ -244,11 +257,11 @@ class Dueling_C51Network(nn.Module):
         advantage = self.advantage(x).view(batch_size,-1, self.N_ATOMS)
         
         q_distr = value + advantage - advantage.mean(dim = 1, keepdim = True)
-        prob = F.softmax(q_distr.view(-1, self.N_ATOMS)).view(-1, self.action_size, self.N_ATOMS)
+        prob = self.softmax(q_distr.view(-1, self.N_ATOMS)).view(-1, self.action_size, self.N_ATOMS)
         return prob
       
     def act(self,state):
       prob = self.forward(state).data.cpu()
-      expected_value = prob * self.supports
+      expected_value = prob.cpu() * self.supports.cpu()
       actions = expected_value.sum(2)
       return actions
