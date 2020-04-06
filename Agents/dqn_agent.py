@@ -1,4 +1,4 @@
-from .ReplayMemories.ReplayMemory import ReplayBuffer
+from .ReplayMemories.ReplayMemory import ReplayBuffer, PrioritizedReplay
 from .Networks import DQN
 
 import numpy as np
@@ -50,6 +50,14 @@ class DQN_Agent():
         self.UPDATE_EVERY = UPDATE_EVERY
         self.BATCH_SIZE = BATCH_SIZE
         self.Q_updates = 0
+        
+        if "per" in Network:
+            self.per = True
+            Network = Network.strip("+per")
+        else:
+            self.per = False
+
+        
 
         if Network == "noisy_dqn" or "noisy_dueling": 
             self.noisy = True
@@ -73,8 +81,13 @@ class DQN_Agent():
                 self.qnetwork_target = DQN.Dueling_QNetwork(state_size, action_size, seed).to(device)
         self.optimizer = optim.RMSprop(self.qnetwork_local.parameters(), lr=LR, alpha=0.95, eps=0.01)
         print(self.qnetwork_local)
+        
         # Replay memory
-        self.memory = ReplayBuffer(BUFFER_SIZE, BATCH_SIZE, self.device, seed)
+        if self.per == True:
+            self.memory = PrioritizedReplay(BUFFER_SIZE, BATCH_SIZE, seed=seed)
+        else:
+            self.memory = ReplayBuffer(BUFFER_SIZE, BATCH_SIZE, self.device, seed)
+        
         # Initialize time step (for updating every UPDATE_EVERY steps)
         self.t_step = 0
     
@@ -88,7 +101,10 @@ class DQN_Agent():
             # If enough samples are available in memory, get random subset and learn
             if len(self.memory) > self.BATCH_SIZE:
                 experiences = self.memory.sample()
-                loss = self.learn(experiences)
+                if self.per == False:
+                    loss = self.learn(experiences)
+                else: 
+                    loss = self.learn_per(experiences)
                 self.Q_updates += 1
                 writer.add_scalar("Q_loss", loss, self.Q_updates)
 
@@ -163,6 +179,56 @@ class DQN_Agent():
         for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
             target_param.data.copy_(self.TAU*local_param.data + (1.0-self.TAU)*target_param.data)
 
+    def learn_per(self, experiences):
+            """Update value parameters using given batch of experience tuples.
+            Params
+            ======
+                experiences (Tuple[torch.Tensor]): tuple of (s, a, r, s', done) tuples 
+                gamma (float): discount factor
+            """
+            self.optimizer.zero_grad()
+            states, actions, rewards, next_states, dones, idx, weights = experiences
+            
+            states = torch.FloatTensor(states).to(self.device)
+            next_states = torch.FloatTensor(np.float32(next_states)).to(self.device)
+            actions = torch.LongTensor(actions).to(self.device).unsqueeze(1)
+            rewards = torch.FloatTensor(rewards).to(self.device).unsqueeze(1) 
+            dones = torch.FloatTensor(dones).to(self.device).unsqueeze(1)
+            weights = torch.FloatTensor(weights).unsqueeze(1).to(self.device)
+
+            # Get max predicted Q values (for next states) from target model
+            Q_targets_next = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(1)
+            # Compute Q targets for current states 
+            Q_targets = rewards + (self.GAMMA * Q_targets_next * (1 - dones))
+            # Get expected Q values from local model
+            Q_expected = self.qnetwork_local(states).gather(1, actions)
+            # Compute loss
+            loss = (F.smooth_l1_loss(Q_expected, Q_targets, reduction="none")*weights).mean().to(self.device) #mse_loss
+            # Minimize the loss
+            loss.backward()
+            clip_grad_norm_(self.qnetwork_local.parameters(),1)
+            self.optimizer.step()
+
+            # ------------------- update target network ------------------- #
+            self.soft_update(self.qnetwork_local, self.qnetwork_target)
+            # update per priorities
+            self.memory.update_priorities(idx, Q_targets.data.cpu().numpy())
+
+            return loss.detach().cpu().numpy()            
+
+    def soft_update(self, local_model, target_model):
+        """Soft update model parameters.
+        θ_target = τ*θ_local + (1 - τ)*θ_target
+        Params
+        ======
+            local_model (PyTorch model): weights will be copied from
+            target_model (PyTorch model): weights will be copied to
+            tau (float): interpolation parameter 
+        """
+        for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
+            target_param.data.copy_(self.TAU*local_param.data + (1.0-self.TAU)*target_param.data)
+
+
 class DQN_C51Agent():
     """Interacts with and learns from the environment."""
 
@@ -203,11 +269,17 @@ class DQN_C51Agent():
         self.UPDATE_EVERY = UPDATE_EVERY
         self.BATCH_SIZE = BATCH_SIZE
         self.Q_updates = 0
+        self.Network = Network
 
         self.N_ATOMS = 51
         self.VMAX = 10
         self.VMIN = -10
         
+        if "per" in Network:
+            self.per = True
+            Network = Network.strip("+per")
+        else:
+            self.per = False
 
         if Network == "noisy_dqn" or "noisy_dueling": 
             self.noisy = True
@@ -233,7 +305,10 @@ class DQN_C51Agent():
         self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR)#, alpha=0.95, eps=0.01)
         print(self.qnetwork_local)
         # Replay memory
-        self.memory = ReplayBuffer(BUFFER_SIZE, BATCH_SIZE, self.device, seed)
+        if self.per == True:
+            self.memory = PrioritizedReplay(BUFFER_SIZE, BATCH_SIZE, seed=seed)
+        else:
+            self.memory = ReplayBuffer(BUFFER_SIZE, BATCH_SIZE, self.device, seed)
         # Initialize time step (for updating every UPDATE_EVERY steps)
         self.t_step = 0
 
@@ -272,7 +347,10 @@ class DQN_C51Agent():
             # If enough samples are available in memory, get random subset and learn
             if len(self.memory) > self.BATCH_SIZE:
                 experiences = self.memory.sample()
-                loss = self.learn(experiences) 
+                if self.per == False:
+                    loss = self.learn(experiences) 
+                else:
+                    loss = self.learn_per(experiences) 
                 self.Q_updates += 1
                 writer.add_scalar("Q_loss", loss, self.Q_updates)
 
@@ -344,6 +422,54 @@ class DQN_C51Agent():
 
         # ------------------- update target network ------------------- #
         self.soft_update(self.qnetwork_local, self.qnetwork_target)
+        return loss.detach().cpu().numpy()
+
+    def learn_per(self, experiences):
+        """Update value parameters using given batch of experience tuples.
+        Params
+        ======
+            experiences (Tuple[torch.Tensor]): tuple of (s, a, r, s', done) tuples 
+            gamma (float): discount factor
+        """
+        states, actions, rewards, next_states, dones, idx, weights = experiences
+
+        states = torch.FloatTensor(states).to(self.device)
+        next_states = torch.FloatTensor(np.float32(next_states)).to(self.device)
+        actions = torch.LongTensor(actions).to(self.device).unsqueeze(1)
+        rewards = torch.FloatTensor(rewards).to(self.device).unsqueeze(1) 
+        dones = torch.FloatTensor(dones).to(self.device).unsqueeze(1)
+        weights = torch.FloatTensor(weights).unsqueeze(1).to(self.device)
+
+        batch_size = self.BATCH_SIZE
+        self.optimizer.zero_grad()
+        # next_state distribution
+        next_distr = self.qnetwork_target(next_states)
+        next_actions = self.qnetwork_target.act(next_states)
+        #chose max action indx
+        next_actions = next_actions.max(1)[1].data.cpu().numpy()
+        # gather best distr
+        next_best_distr = next_distr[range(batch_size), next_actions]
+
+        proj_distr = self.projection_distribution(next_best_distr, next_states, rewards, dones).to(self.device)
+        # Compute loss
+        # calculates the prob_distribution for the actions based on the given state
+        prob_distr = self.qnetwork_local(states)
+        actions = actions.unsqueeze(1).expand(batch_size, 1, self.N_ATOMS)
+        # gathers the the prob_distribution for the chosen action
+        state_action_prob = prob_distr.gather(1, actions).squeeze(1)
+        loss_prio = -((state_action_prob.log() * proj_distr.detach()).sum(dim=1).unsqueeze(1)*weights) # at some point none values arise
+        #print(loss_prio)
+        loss = loss_prio.mean()
+    
+        # Minimize the loss
+        loss.backward()
+        clip_grad_norm_(self.qnetwork_local.parameters(),1)
+        self.optimizer.step()
+
+        # ------------------- update target network ------------------- #
+        self.soft_update(self.qnetwork_local, self.qnetwork_target)
+        # update per priorities
+        self.memory.update_priorities(idx, loss_prio.data.cpu().numpy())
         return loss.detach().cpu().numpy()                   
 
     def soft_update(self, local_model, target_model):

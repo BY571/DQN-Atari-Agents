@@ -49,14 +49,14 @@ def run(frames=1000, eps_frames=1e6, min_eps=0.01):
 
         action = agent.act(state, eps)
         next_state, reward, done, _ = env.step(action)
-        agent.step(state, action, reward, next_state, done)
+        agent.step(state, action, reward, next_state, done, writer)
         state = next_state
         score += reward
         # linear annealing to the min epsilon value until eps_frames and from there slowly decease epsilon to 0 until the end of training
         if frame < eps_frames:
             eps = max(eps_start - (frame*(1/eps_frames)), min_eps)
-        #else:
-        #    eps = min_eps - ((frame-eps_frames)/(frames-eps_frames))
+        else:
+            eps = min_eps - min_eps*((frame-eps_frames)/(frames-eps_frames))
 
         if done:
             scores_window.append(score)       # save most recent score
@@ -71,12 +71,28 @@ def run(frames=1000, eps_frames=1e6, min_eps=0.01):
             state = env.reset()
             score = 0              
 
-    return scores
+    return np.mean(scores_window)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-agent", type=str, choices=["dqn", "noisy_dqn", "dueling", "noisy_dueling", "c51", "noisy_c51", "duelingc51", "noisy_duelingc51" ], default="dqn", help="Specify which type of DQN agent you want to train, default is DQN - baseline!")
+    parser.add_argument("-agent", type=str, choices=["dqn",
+                                                     "dqn+per",
+                                                     "noisy_dqn",
+                                                     "noisy_dqn+per",
+                                                     "dueling",
+                                                     "dueling+per", 
+                                                     "noisy_dueling",
+                                                     "noisy_dueling+per", 
+                                                     "c51",
+                                                     "c51+per", 
+                                                     "noisy_c51",
+                                                     "noisy_c51+per", 
+                                                     "duelingc51",
+                                                     "duelingc51+per", 
+                                                     "noisy_duelingc51",
+                                                     "noisy_duelingc51+per" ], default="dqn", help="Specify which type of DQN agent you want to train, default is DQN - baseline!")
+    
     parser.add_argument("-env", type=str, default="PongDeterministic-v4", help="Name of the atari Environment, default = Pong-v0")
     parser.add_argument("-frames", type=int, default=int(5e6), help="Number of frames to train, default = 5 mio")
     parser.add_argument("-seed", type=int, default=1, help="Random seed to replicate training runs, default = 1")
@@ -87,7 +103,7 @@ if __name__ == "__main__":
     parser.add_argument("-g", "--gamma", type=float, default=0.99, help="Discount factor gamma, default = 0.99")
     parser.add_argument("-t", "--tau", type=float, default=1e-3, help="Soft update parameter tat, default = 1e-3")
     parser.add_argument("-eps_frames", type=int, default=2e5, help="Linear annealed frames for Epsilon, default = 2e5")
-    parser.add_argument("-min_eps", type=float, default = 0.05, help="Final epsilon greedy value, default = 0.1")
+    parser.add_argument("-min_eps", type=float, default = 0.1, help="Final epsilon greedy value, default = 0.1")
     parser.add_argument("-info", type=str, help="Name of the training run")
     parser.add_argument("--fill_buffer", type=int, default=50000, help="Adding samples to the replay buffer based on a random policy, before agent-env-interaction. Input numer of preadded frames to the buffer, default = 50000")
     parser.add_argument("-save_model", type=int, choices=[0,1], default=0, help="Specify if the trained network shall be saved or not, default is 0 - not saved!")
@@ -115,7 +131,7 @@ if __name__ == "__main__":
     state_size = env.observation_space.shape
 
     if not "c51" in args.agent:
-        agent = DQN_Agent(state_size=state_size,
+        agent = DQN_Agent(state_size=state_size,    
                         action_size=action_size,
                         Network=args.agent, 
                         BATCH_SIZE=BATCH_SIZE, 
@@ -146,9 +162,22 @@ if __name__ == "__main__":
 
 
     t0 = time.time()
-    scores = run(frames = args.frames, eps_frames=args.eps_frames, min_eps=args.min_eps)
+    final_average100 = run(frames = args.frames, eps_frames=args.eps_frames, min_eps=args.min_eps)
     t1 = time.time()
     
     print("Training time: {}min".format((t1-t0)/60))
     if args.save_model:
         torch.save(agent.qnetwork_local.state_dict(), str(args.info))
+
+    hparams = {"agent": args.agent,
+               "batch size": args.batch_size, 
+               "memory size": args.memory_size,
+               "update every": args.update_every,
+               "learning rate": args.lr,
+               "gamma": args.gamma,
+               "soft update tau": args.tau,
+               "epsilon decay frames": args.eps_frames,
+               "min epsilon": args.min_eps,
+               "random warmup": args.fill_buffer}
+    metric = {"final average 100 reward": final_average100}
+    writer.add_hparams(hparams, metric)
