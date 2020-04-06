@@ -97,6 +97,7 @@ if __name__ == "__main__":
     parser.add_argument("-frames", type=int, default=int(5e6), help="Number of frames to train, default = 5 mio")
     parser.add_argument("-seed", type=int, default=1, help="Random seed to replicate training runs, default = 1")
     parser.add_argument("-bs", "--batch_size", type=int, default=32, help="Batch size for updating the DQN, default = 32")
+    parser.add_argument("-layer_size", type=int, default=512, help="Size of the hidden layer, default=512")
     parser.add_argument("-m", "--memory_size", type=int, default=int(1e5), help="Replay memory size, default = 1e5")
     parser.add_argument("-u", "--update_every", type=int, default=4, help="Update the network every x steps, default = 4")
     parser.add_argument("-lr", type=float, default=0.00025, help="Learning rate, default = 0.00025")
@@ -133,7 +134,8 @@ if __name__ == "__main__":
     if not "c51" in args.agent:
         agent = DQN_Agent(state_size=state_size,    
                         action_size=action_size,
-                        Network=args.agent, 
+                        Network=args.agent,
+                        layer_size=args.layer_size,
                         BATCH_SIZE=BATCH_SIZE, 
                         BUFFER_SIZE=BUFFER_SIZE, 
                         LR=LR, 
@@ -146,6 +148,7 @@ if __name__ == "__main__":
         agent = DQN_C51Agent(state_size=state_size,
                         action_size=action_size,
                         Network=args.agent, 
+                        layer_size=args.layer_size,
                         BATCH_SIZE=BATCH_SIZE, 
                         BUFFER_SIZE=BUFFER_SIZE, 
                         LR=LR, 
@@ -170,7 +173,8 @@ if __name__ == "__main__":
         torch.save(agent.qnetwork_local.state_dict(), str(args.info))
 
     hparams = {"agent": args.agent,
-               "batch size": args.batch_size, 
+               "batch size": args.batch_size,
+               "layer size": args.layer_size, 
                "memory size": args.memory_size,
                "update every": args.update_every,
                "learning rate": args.lr,

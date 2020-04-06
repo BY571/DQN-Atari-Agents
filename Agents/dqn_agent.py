@@ -17,6 +17,7 @@ class DQN_Agent():
                  state_size,
                  action_size,
                  Network,
+                 layer_size,
                  BATCH_SIZE,
                  BUFFER_SIZE,
                  LR,
@@ -32,6 +33,7 @@ class DQN_Agent():
             state_size (int): dimension of each state
             action_size (int): dimension of each action
             Network (str): dqn network type
+            layer_size (int): size of the hidden layer
             BATCH_SIZE (int): size of the training batch
             BUFFER_SIZE (int): size of the replay memory
             LR (float): learning rate
@@ -68,17 +70,17 @@ class DQN_Agent():
 
 	    # Q-Network
         if Network == "noisy_dqn":
-            self.qnetwork_local = DQN.DDQN(state_size, action_size, seed, layer_type="noisy").to(device)
-            self.qnetwork_target = DQN.DDQN(state_size, action_size, seed, layer_type="noisy").to(device)
+            self.qnetwork_local = DQN.DDQN(state_size, action_size,layer_size, seed, layer_type="noisy").to(device)
+            self.qnetwork_target = DQN.DDQN(state_size, action_size,layer_size, seed, layer_type="noisy").to(device)
         if Network == "dqn":
-                self.qnetwork_local = DQN.DDQN(state_size, action_size, seed).to(device)
-                self.qnetwork_target = DQN.DDQN(state_size, action_size, seed).to(device)
+                self.qnetwork_local = DQN.DDQN(state_size, action_size,layer_size, seed).to(device)
+                self.qnetwork_target = DQN.DDQN(state_size, action_size,layer_size, seed).to(device)
         if Network == "noisy_dueling":
-            self.qnetwork_local = DQN.Dueling_QNetwork(state_size, action_size, seed, layer_type="noisy").to(device)
-            self.qnetwork_target = DQN.Dueling_QNetwork(state_size, action_size, seed, layer_type="noisy").to(device)
+            self.qnetwork_local = DQN.Dueling_QNetwork(state_size, action_size,layer_size, seed, layer_type="noisy").to(device)
+            self.qnetwork_target = DQN.Dueling_QNetwork(state_size, action_size,layer_size, seed, layer_type="noisy").to(device)
         if Network == "dueling":
-                self.qnetwork_local = DQN.Dueling_QNetwork(state_size, action_size, seed).to(device)
-                self.qnetwork_target = DQN.Dueling_QNetwork(state_size, action_size, seed).to(device)
+                self.qnetwork_local = DQN.Dueling_QNetwork(state_size, action_size,layer_size, seed).to(device)
+                self.qnetwork_target = DQN.Dueling_QNetwork(state_size, action_size,layer_size, seed).to(device)
         self.optimizer = optim.RMSprop(self.qnetwork_local.parameters(), lr=LR, alpha=0.95, eps=0.01)
         print(self.qnetwork_local)
         
@@ -236,6 +238,7 @@ class DQN_C51Agent():
                  state_size,
                  action_size,
                  Network,
+                 layer_size,
                  BATCH_SIZE,
                  BUFFER_SIZE,
                  LR,
@@ -290,17 +293,17 @@ class DQN_C51Agent():
 
 	    # Q-Network
         if Network == "noisy_c51":
-            self.qnetwork_local = DQN.DDQN_C51(state_size, action_size, seed, layer_type="noisy").to(device)
-            self.qnetwork_target = DQN.DDQN_C51(state_size, action_size, seed, layer_type="noisy").to(device)
+            self.qnetwork_local = DQN.DDQN_C51(state_size, action_size,layer_size, seed, layer_type="noisy").to(device)
+            self.qnetwork_target = DQN.DDQN_C51(state_size, action_size,layer_size, seed, layer_type="noisy").to(device)
         if Network == "c51":
-                self.qnetwork_local = DQN.DDQN_C51(state_size, action_size, seed).to(device)
-                self.qnetwork_target = DQN.DDQN_C51(state_size, action_size, seed).to(device)
+                self.qnetwork_local = DQN.DDQN_C51(state_size, action_size,layer_size, seed).to(device)
+                self.qnetwork_target = DQN.DDQN_C51(state_size, action_size,layer_size, seed).to(device)
         if Network == "noisy_duelingc51":
-            self.qnetwork_local = DQN.Dueling_C51Network(state_size, action_size, seed, layer_type="noisy").to(device)
-            self.qnetwork_target = DQN.Dueling_C51Network(state_size, action_size, seed, layer_type="noisy").to(device)
+            self.qnetwork_local = DQN.Dueling_C51Network(state_size, action_size,layer_size, seed, layer_type="noisy").to(device)
+            self.qnetwork_target = DQN.Dueling_C51Network(state_size, action_size,layer_size, seed, layer_type="noisy").to(device)
         if Network == "duelingc51":
-                self.qnetwork_local = DQN.Dueling_C51Network(state_size, action_size, seed).to(device)
-                self.qnetwork_target = DQN.Dueling_C51Network(state_size, action_size, seed).to(device)
+                self.qnetwork_local = DQN.Dueling_C51Network(state_size, action_size,layer_size, seed).to(device)
+                self.qnetwork_target = DQN.Dueling_C51Network(state_size, action_size,layer_size, seed).to(device)
 
         self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR)#, alpha=0.95, eps=0.01)
         print(self.qnetwork_local)
