@@ -49,6 +49,7 @@ class DQN_Agent():
         self.GAMMA = GAMMA
         self.UPDATE_EVERY = UPDATE_EVERY
         self.BATCH_SIZE = BATCH_SIZE
+        self.Q_updates = 0
 
         if Network == "noisy_dqn" or "noisy_dueling": 
             self.noisy = True
@@ -77,7 +78,7 @@ class DQN_Agent():
         # Initialize time step (for updating every UPDATE_EVERY steps)
         self.t_step = 0
     
-    def step(self, state, action, reward, next_state, done):
+    def step(self, state, action, reward, next_state, done, writer):
         # Save experience in replay memory
         self.memory.add(state, action, reward, next_state, done)
         
@@ -87,7 +88,9 @@ class DQN_Agent():
             # If enough samples are available in memory, get random subset and learn
             if len(self.memory) > self.BATCH_SIZE:
                 experiences = self.memory.sample()
-                self.learn(experiences) 
+                loss = self.learn(experiences)
+                self.Q_updates += 1
+                writer.add_scalar("Q_loss", loss, self.Q_updates)
 
     def act(self, state, eps=0.):
         """Returns actions for given state as per current policy. Acting only every 4 frames!
@@ -145,7 +148,8 @@ class DQN_Agent():
         self.optimizer.step()
 
         # ------------------- update target network ------------------- #
-        self.soft_update(self.qnetwork_local, self.qnetwork_target)                     
+        self.soft_update(self.qnetwork_local, self.qnetwork_target)
+        return loss.detach().cpu().numpy()            
 
     def soft_update(self, local_model, target_model):
         """Soft update model parameters.
@@ -198,6 +202,7 @@ class DQN_C51Agent():
         self.GAMMA = GAMMA
         self.UPDATE_EVERY = UPDATE_EVERY
         self.BATCH_SIZE = BATCH_SIZE
+        self.Q_updates = 0
 
         self.N_ATOMS = 51
         self.VMAX = 10
@@ -257,7 +262,7 @@ class DQN_C51Agent():
 
         return proj_dist
     
-    def step(self, state, action, reward, next_state, done):
+    def step(self, state, action, reward, next_state, done, writer):
         # Save experience in replay memory
         self.memory.add(state, action, reward, next_state, done)
         
@@ -267,7 +272,9 @@ class DQN_C51Agent():
             # If enough samples are available in memory, get random subset and learn
             if len(self.memory) > self.BATCH_SIZE:
                 experiences = self.memory.sample()
-                self.learn(experiences) 
+                loss = self.learn(experiences) 
+                self.Q_updates += 1
+                writer.add_scalar("Q_loss", loss, self.Q_updates)
 
     def act(self, state, eps=0.):
         """Returns actions for given state as per current policy. Acting only every 4 frames!
@@ -336,7 +343,8 @@ class DQN_C51Agent():
         self.optimizer.step()
 
         # ------------------- update target network ------------------- #
-        self.soft_update(self.qnetwork_local, self.qnetwork_target)                     
+        self.soft_update(self.qnetwork_local, self.qnetwork_target)
+        return loss.detach().cpu().numpy()                   
 
     def soft_update(self, local_model, target_model):
         """Soft update model parameters.
