@@ -49,7 +49,6 @@ class DQN_Agent():
         self.GAMMA = GAMMA
         self.UPDATE_EVERY = UPDATE_EVERY
         self.BATCH_SIZE = BATCH_SIZE
-        
 
         if Network == "noisy_dqn" or "noisy_dueling": 
             self.noisy = True
@@ -141,8 +140,8 @@ class DQN_Agent():
         # Compute loss
         loss = F.smooth_l1_loss(Q_expected, Q_targets) #mse_loss
         # Minimize the loss
-        #clip_grad_norm_(self.qnetwork_local.parameters(),1)
         loss.backward()
+        clip_grad_norm_(self.qnetwork_local.parameters(),1)
         self.optimizer.step()
 
         # ------------------- update target network ------------------- #
@@ -312,7 +311,7 @@ class DQN_C51Agent():
         """
         states, actions, rewards, next_states, dones = experiences
         batch_size = len(states)
-
+        self.optimizer.zero_grad()
         # next_state distribution
         next_distr = self.qnetwork_target(next_states)
         next_actions = self.qnetwork_target.act(next_states)
@@ -332,8 +331,8 @@ class DQN_C51Agent():
         loss = -(state_action_prob.log() * proj_distr.detach()).sum(dim=1).mean()
        
         # Minimize the loss
-        self.optimizer.zero_grad()
         loss.backward()
+        clip_grad_norm_(self.qnetwork_local.parameters(),1)
         self.optimizer.step()
 
         # ------------------- update target network ------------------- #

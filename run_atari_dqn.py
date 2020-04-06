@@ -108,6 +108,7 @@ if __name__ == "__main__":
 
     env = gym.make(args.env)
     env.seed(seed)
+    np.random.seed(seed)
     if not "ram" in args.env and args.env != "CartPole-v0": 
         env = wrapper.wrap_deepmind(env)
     action_size     = env.action_space.n
