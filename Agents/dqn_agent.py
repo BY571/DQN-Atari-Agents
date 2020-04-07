@@ -4,6 +4,7 @@ from .Networks import DQN
 import numpy as np
 import torch
 import torch.nn
+from torch.nn import KLDivLoss
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.nn.utils import clip_grad_norm_
@@ -61,10 +62,10 @@ class DQN_Agent():
 
         
 
-        if Network == "noisy_dqn" or "noisy_dueling": 
+        if "noisy" in Network: 
             self.noisy = True
         else: self.noisy = False
-
+        print("Is noisy: ", self.noisy)
         self.action_step = 4
         self.last_action = None
 
@@ -130,7 +131,7 @@ class DQN_Agent():
             self.qnetwork_local.train()
 
             # Epsilon-greedy action selection
-            if random.random() > eps or self.noisy: # select greedy action if random number is higher than epsilon or noisy network is used!
+            if random.random() > eps: # select greedy action if random number is higher than epsilon or noisy network is used!
                 action = np.argmax(action_values.cpu().data.numpy())
                 self.last_action = action
                 return action
@@ -284,10 +285,11 @@ class DQN_C51Agent():
         else:
             self.per = False
 
-        if Network == "noisy_dqn" or "noisy_dueling": 
+        if "noisy" in Network:
             self.noisy = True
         else: self.noisy = False
 
+        print("Is noisy: ", self.noisy)
         self.action_step = 4
         self.last_action = None
 
@@ -319,11 +321,14 @@ class DQN_C51Agent():
         """
         """
         batch_size  = next_state.size(0)
+        # create support atoms
         delta_z = float(self.VMAX - self.VMIN) / (self.N_ATOMS - 1)
         support = torch.linspace(self.VMIN, self.VMAX, self.N_ATOMS)
+        support = support.unsqueeze(0).expand_as(next_distr).to(self.device)
+
         rewards = rewards.expand_as(next_distr)
         dones   = dones.expand_as(next_distr)
-        support = support.unsqueeze(0).expand_as(next_distr).to(self.device)
+        
         ## Compute the projection of T̂ z onto the support {z_i}
         Tz = rewards + (1 - dones) * self.GAMMA * support
         Tz = Tz.clamp(min=self.VMIN, max=self.VMAX)
@@ -377,12 +382,14 @@ class DQN_C51Agent():
             self.qnetwork_local.train()
 
             # Epsilon-greedy action selection
-            if random.random() > eps or self.noisy: # select greedy action if random number is higher than epsilon or noisy network is used!
+            if random.random() > eps:# or self.noisy: # select greedy action if random number is higher than epsilon or noisy network is used!
                 action = np.argmax(action_values.cpu().data.numpy())
+                #print("greedy")
                 self.last_action = action
                 return action
             else:
                 action = random.choice(np.arange(self.action_size))
+                #print("random")
                 self.last_action = action 
                 return action
             #self.action_step = 0
@@ -417,7 +424,6 @@ class DQN_C51Agent():
         # gathers the the prob_distribution for the chosen action
         state_action_prob = prob_distr.gather(1, actions).squeeze(1)
         loss = -(state_action_prob.log() * proj_distr.detach()).sum(dim=1).mean()
-       
         # Minimize the loss
         loss.backward()
         clip_grad_norm_(self.qnetwork_local.parameters(),1)
@@ -463,7 +469,7 @@ class DQN_C51Agent():
         loss_prio = -((state_action_prob.log() * proj_distr.detach()).sum(dim=1).unsqueeze(1)*weights) # at some point none values arise
         #print(loss_prio)
         loss = loss_prio.mean()
-    
+
         # Minimize the loss
         loss.backward()
         clip_grad_norm_(self.qnetwork_local.parameters(),1)

@@ -26,7 +26,7 @@ def run_random_policy(random_frames):
         if done:
             state = env.reset()
 
-def run(frames=1000, eps_frames=1e6, min_eps=0.01):
+def run(frames=1000, eps_fixed=False, eps_frames=1e6, min_eps=0.01):
     """Deep Q-Learning.
     
     Params
@@ -53,10 +53,11 @@ def run(frames=1000, eps_frames=1e6, min_eps=0.01):
         state = next_state
         score += reward
         # linear annealing to the min epsilon value until eps_frames and from there slowly decease epsilon to 0 until the end of training
-        if frame < eps_frames:
-            eps = max(eps_start - (frame*(1/eps_frames)), min_eps)
-        else:
-            eps = min_eps - min_eps*((frame-eps_frames)/(frames-eps_frames))
+        if eps_fixed == False:
+            if frame < eps_frames:
+                eps = max(eps_start - (frame*(1/eps_frames)), min_eps)
+            else:
+                eps = max(min_eps - min_eps*((frame-eps_frames)/(frames-eps_frames)), 0.001)
 
         if done:
             scores_window.append(score)       # save most recent score
@@ -163,9 +164,14 @@ if __name__ == "__main__":
         run_random_policy(args.fill_buffer)
         print("Buffer size: ", agent.memory.__len__())
 
+    # set epsilon frames to 0 so no epsilon exploration
+    if "noisy" in args.agent:
+        eps_fixed = True
+    else:
+        eps_fixed = False
 
     t0 = time.time()
-    final_average100 = run(frames = args.frames, eps_frames=args.eps_frames, min_eps=args.min_eps)
+    final_average100 = run(frames = args.frames, eps_fixed=eps_fixed, eps_frames=args.eps_frames, min_eps=args.min_eps)
     t1 = time.time()
     
     print("Training time: {}min".format((t1-t0)/60))

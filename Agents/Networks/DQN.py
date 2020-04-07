@@ -11,7 +11,7 @@ def weight_init(layers):
 class NoisyLinear(nn.Linear):
     # Noisy Linear Layer for independent Gaussian Noise
     def __init__(self, in_features, out_features, sigma_init=0.017, bias=True):
-        super(NoisyLinear, self).__init__(in_features, out_features, bias = bias)
+        super(NoisyLinear, self).__init__(in_features, out_features, bias=bias)
         # make the sigmas trainable:
         self.sigma_weight = nn.Parameter(torch.full((out_features, in_features), sigma_init))
         # not trainable tensor for the nn.Module
@@ -265,10 +265,12 @@ class Dueling_C51Network(nn.Module):
             x = torch.relu(self.head_1(input))
             x_A = torch.relu(self.ff_1_A(x))
             x_V = torch.relu(self.ff_1_V(x)) 
-             
+
         value = self.value(x_V).view(batch_size,1,self.N_ATOMS)
         advantage = self.advantage(x_A).view(batch_size,-1, self.N_ATOMS)
         
+        print("v", value)
+        print("a",advantage)
         q_distr = value + advantage - advantage.mean(dim = 1, keepdim = True)
         prob = self.softmax(q_distr.view(-1, self.N_ATOMS)).view(-1, self.action_size, self.N_ATOMS)
         return prob
@@ -348,6 +350,8 @@ class DDQN_C51(nn.Module):
       
     def act(self,state):
       prob = self.forward(state).data.cpu()
+      # create value distribution for each action - shape: (batch_size, action_space, 51)
       expected_value = prob.cpu() * self.supports.cpu()
+      # sum up the prob*values for the action dimension - shape: (batch_size, action_space)
       actions = expected_value.sum(2)
       return actions
