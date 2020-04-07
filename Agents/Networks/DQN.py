@@ -268,9 +268,6 @@ class Dueling_C51Network(nn.Module):
 
         value = self.value(x_V).view(batch_size,1,self.N_ATOMS)
         advantage = self.advantage(x_A).view(batch_size,-1, self.N_ATOMS)
-        
-        print("v", value)
-        print("a",advantage)
         q_distr = value + advantage - advantage.mean(dim = 1, keepdim = True)
         prob = self.softmax(q_distr.view(-1, self.N_ATOMS)).view(-1, self.action_size, self.N_ATOMS)
         return prob
