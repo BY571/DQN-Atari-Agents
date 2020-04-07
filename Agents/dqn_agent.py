@@ -307,7 +307,7 @@ class DQN_C51Agent():
                 self.qnetwork_local = DQN.Dueling_C51Network(state_size, action_size,layer_size, seed).to(device)
                 self.qnetwork_target = DQN.Dueling_C51Network(state_size, action_size,layer_size, seed).to(device)
 
-        self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR)#, alpha=0.95, eps=0.01)
+        self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR, eps=0.003)
         print(self.qnetwork_local)
         # Replay memory
         if self.per == True:
