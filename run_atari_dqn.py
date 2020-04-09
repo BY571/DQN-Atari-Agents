@@ -95,7 +95,8 @@ if __name__ == "__main__":
                                                      "duelingc51",
                                                      "duelingc51+per", 
                                                      "noisy_duelingc51",
-                                                     "noisy_duelingc51+per" ], default="dqn", help="Specify which type of DQN agent you want to train, default is DQN - baseline!")
+                                                     "noisy_duelingc51+per",
+                                                     "rainbow" ], default="dqn", help="Specify which type of DQN agent you want to train, default is DQN - baseline!")
     
     parser.add_argument("-env", type=str, default="PongDeterministic-v4", help="Name of the atari Environment, default = Pong-v0")
     parser.add_argument("-frames", type=int, default=int(5e6), help="Number of frames to train, default = 5 mio")
@@ -115,6 +116,10 @@ if __name__ == "__main__":
     parser.add_argument("-save_model", type=int, choices=[0,1], default=0, help="Specify if the trained network shall be saved or not, default is 0 - not saved!")
 
     args = parser.parse_args()
+    if args.agent == "rainbow":
+        args.n_step = 2
+        args.agent = "noisy_duelingc51+per"
+        
     writer = SummaryWriter("runs/"+str(args.info))
 
     BUFFER_SIZE = args.memory_size
