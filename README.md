@@ -3,12 +3,12 @@ Modularized training of different DQN Algorithms.
 
 This repository contains several Add-ons to the base DQN Algorithm. All versions can be trained from one script and include the option to train from raw pixel or ram digit data. 
 
-Following DQN versions are currently included:
+Following DQN versions are included:
 
 - DDQN
 - Dueling DDQN
 
-Both can be enhanced with **Noisy layer**, **Per** (Prioritized Experience Replay), **Multistep Targets** and be trained in a **Categorical version (C51)**.
+Both can be enhanced with **Noisy layer**, **Per** (Prioritized Experience Replay), **Multistep Targets** and be trained in a **Categorical version (C51)**. Combining all these add-ons will lead to the *state-of-the-art* Algorithm of value-based methods called: **Rainbow**. 
 
 #### Planned Add-ons:
 - DRQN (recurrent DQN)
