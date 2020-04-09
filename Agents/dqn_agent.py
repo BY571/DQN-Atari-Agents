@@ -217,7 +217,7 @@ class DQN_Agent():
             # ------------------- update target network ------------------- #
             self.soft_update(self.qnetwork_local, self.qnetwork_target)
             # update per priorities
-            self.memory.update_priorities(idx, Q_targets.data.cpu().numpy())
+            self.memory.update_priorities(idx, abs(Q_targets.data.cpu().numpy()))
 
             return loss.detach().cpu().numpy()            
 
@@ -470,8 +470,6 @@ class DQN_C51Agent():
         actions = actions.unsqueeze(1).expand(batch_size, 1, self.N_ATOMS)
         # gathers the the prob_distribution for the chosen action
         state_action_prob = prob_distr.gather(1, actions).squeeze(1)
-        state_action_prob = torch.clamp(state_action_prob.cpu(), min=1e-5).to(self.device)
-        proj_distr = torch.clamp(proj_distr.detach().cpu(), min=1e-5).to(self.device)
         loss_prio = -((state_action_prob.log() * proj_distr.detach()).sum(dim=1).unsqueeze(1)*weights) # at some point none values arise
         #print("LOSS: ",loss_prio)
         loss = loss_prio.mean()
@@ -484,7 +482,7 @@ class DQN_C51Agent():
         # ------------------- update target network ------------------- #
         self.soft_update(self.qnetwork_local, self.qnetwork_target)
         # update per priorities
-        self.memory.update_priorities(idx, loss_prio.data.cpu().numpy())
+        self.memory.update_priorities(idx, abs(loss_prio.data.cpu().numpy()))
         return loss.detach().cpu().numpy()                   
 
     def soft_update(self, local_model, target_model):

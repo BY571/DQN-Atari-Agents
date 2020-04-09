@@ -119,7 +119,7 @@ if __name__ == "__main__":
     if args.agent == "rainbow":
         args.n_step = 2
         args.agent = "noisy_duelingc51+per"
-        
+
     writer = SummaryWriter("runs/"+str(args.info))
 
     BUFFER_SIZE = args.memory_size
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     env = gym.make(args.env)
     env.seed(seed)
     np.random.seed(seed)
-    if not "ram" in args.env and args.env != "CartPole-v0": 
+    if not "ram" in args.env and args.env != "CartPole-v0" and args.env != "LunarLander-v2": 
         env = wrapper.wrap_deepmind(env)
     action_size     = env.action_space.n
     state_size = env.observation_space.shape
