@@ -457,7 +457,7 @@ class DQN_C51Agent():
         self.optimizer.zero_grad()
         # next_state distribution
         next_distr = self.qnetwork_target(next_states)
-        next_actions = self.qnetwork_target.act(next_states)
+        next_actions = self.qnetwork_target.act(next_states)    
         #chose max action indx
         next_actions = next_actions.max(1)[1].data.cpu().numpy()
         # gather best distr
@@ -470,8 +470,10 @@ class DQN_C51Agent():
         actions = actions.unsqueeze(1).expand(batch_size, 1, self.N_ATOMS)
         # gathers the the prob_distribution for the chosen action
         state_action_prob = prob_distr.gather(1, actions).squeeze(1)
+        state_action_prob = torch.clamp(state_action_prob.cpu(), min=1e-5).to(self.device)
+        proj_distr = torch.clamp(proj_distr.detach().cpu(), min=1e-5).to(self.device)
         loss_prio = -((state_action_prob.log() * proj_distr.detach()).sum(dim=1).unsqueeze(1)*weights) # at some point none values arise
-        #print(loss_prio)
+        #print("LOSS: ",loss_prio)
         loss = loss_prio.mean()
 
         # Minimize the loss
