@@ -79,3 +79,18 @@ Im open for feedback, found bugs, improvements or anything. Just leave me a mess
 - [PER](https://arxiv.org/pdf/1511.05952.pdf)
 - [Rainbow](https://arxiv.org/pdf/1710.02298.pdf)
 - [DRQN](https://arxiv.org/abs/1507.06527)
+
+## Author
+- Sebastian Dittert
+
+**Feel free to use this code for your own projects or research.**
+For citation:
+```
+@misc{Upside-Down,
+  author = {Dittert, Sebastian},
+  title = {PyTorch Implementation of Upside-Down RL},
+  year = {2020},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/BY571/Upside-Down-Reinforcement-Learning}},
+}
