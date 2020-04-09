@@ -71,3 +71,11 @@ Its interesting to see that the add-ons have a negative impact for the super sim
 Im open for feedback, found bugs, improvements or anything. Just leave me a message or contact me.
 
 ### Paper references:
+
+- [DQN](https://arxiv.org/abs/1312.5602)
+- [Dueling DQN](https://arxiv.org/abs/1511.06581)
+- [Noisy layer](https://arxiv.org/pdf/1706.10295.pdf)
+- [C51](https://arxiv.org/pdf/1707.06887.pdf)
+- [PER](https://arxiv.org/pdf/1511.05952.pdf)
+- [Rainbow](https://arxiv.org/pdf/1710.02298.pdf)
+- [DRQN](https://arxiv.org/abs/1507.06527)
