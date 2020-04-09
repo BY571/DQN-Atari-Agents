@@ -43,7 +43,7 @@ class NoisyLinear(nn.Linear):
         return F.linear(input, self.weight + self.sigma_weight * self.epsilon_weight, bias)
 
 class DDQN(nn.Module):
-    def __init__(self, state_size, action_size,layer_size, seed, layer_type="ff"):
+    def __init__(self, state_size, action_size,layer_size, n_step, seed, layer_type="ff"):
         super(DDQN, self).__init__()
         self.seed = torch.manual_seed(seed)
         self.input_shape = state_size
@@ -104,7 +104,7 @@ class DDQN(nn.Module):
 class Dueling_QNetwork(nn.Module):
     """Actor (Policy) Model."""
 
-    def __init__(self, state_size, action_size,layer_size, seed, layer_type="ff"):
+    def __init__(self, state_size, action_size,layer_size, n_step, seed, layer_type="ff"):
         """Initialize parameters and build model.
         Params
         ======
@@ -185,7 +185,7 @@ class Dueling_QNetwork(nn.Module):
 class Dueling_C51Network(nn.Module):
     """Actor (Policy) Model."""
 
-    def __init__(self, state_size, action_size,layer_size, seed, layer_type="ff", N_ATOMS=51, VMAX=10, VMIN=-10):
+    def __init__(self, state_size, action_size,layer_size, n_step, seed, layer_type="ff", N_ATOMS=51, VMAX=10, VMIN=-10):
         """Initialize parameters and build model.
         Params
         ======
@@ -279,7 +279,7 @@ class Dueling_C51Network(nn.Module):
       return actions
 
 class DDQN_C51(nn.Module):
-    def __init__(self, state_size, action_size,layer_size, seed, layer_type="ff", N_ATOMS=51, VMAX=10, VMIN=-10):
+    def __init__(self, state_size, action_size,layer_size, n_step, seed, layer_type="ff", N_ATOMS=51, VMAX=10, VMIN=-10):
         super(DDQN_C51, self).__init__()
         self.seed = torch.manual_seed(seed)
         self.input_shape = state_size

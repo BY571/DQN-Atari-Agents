@@ -40,7 +40,10 @@ def run(frames=1000, eps_fixed=False, eps_frames=1e6, min_eps=0.01):
     scores = []                        # list containing scores from each episode
     scores_window = deque(maxlen=100)  # last 100 scores
     frame = 0
-    eps = 1
+    if eps_fixed:
+        eps = 0
+    else:
+        eps = 1
     eps_start = 1
     i_episode = 1
     state = env.reset()
@@ -99,6 +102,7 @@ if __name__ == "__main__":
     parser.add_argument("-seed", type=int, default=1, help="Random seed to replicate training runs, default = 1")
     parser.add_argument("-bs", "--batch_size", type=int, default=32, help="Batch size for updating the DQN, default = 32")
     parser.add_argument("-layer_size", type=int, default=512, help="Size of the hidden layer, default=512")
+    parser.add_argument("-n_step", type=int, default=1, help="Multistep DQN, default = 1")
     parser.add_argument("-m", "--memory_size", type=int, default=int(1e5), help="Replay memory size, default = 1e5")
     parser.add_argument("-u", "--update_every", type=int, default=4, help="Update the network every x steps, default = 4")
     parser.add_argument("-lr", type=float, default=0.00025, help="Learning rate, default = 0.00025")
@@ -119,6 +123,7 @@ if __name__ == "__main__":
     TAU = args.tau
     LR = args.lr
     UPDATE_EVERY = args.update_every
+    n_step = args.n_step
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Using ", device)
 
@@ -137,6 +142,7 @@ if __name__ == "__main__":
                         action_size=action_size,
                         Network=args.agent,
                         layer_size=args.layer_size,
+                        n_step=n_step,
                         BATCH_SIZE=BATCH_SIZE, 
                         BUFFER_SIZE=BUFFER_SIZE, 
                         LR=LR, 
@@ -150,6 +156,7 @@ if __name__ == "__main__":
                         action_size=action_size,
                         Network=args.agent, 
                         layer_size=args.layer_size,
+                        n_step=n_step,
                         BATCH_SIZE=BATCH_SIZE, 
                         BUFFER_SIZE=BUFFER_SIZE, 
                         LR=LR, 
@@ -181,6 +188,7 @@ if __name__ == "__main__":
     hparams = {"agent": args.agent,
                "batch size": args.batch_size,
                "layer size": args.layer_size, 
+               "n_step": args.n_step,
                "memory size": args.memory_size,
                "update every": args.update_every,
                "learning rate": args.lr,

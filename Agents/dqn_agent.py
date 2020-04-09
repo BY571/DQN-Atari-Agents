@@ -19,6 +19,7 @@ class DQN_Agent():
                  action_size,
                  Network,
                  layer_size,
+                 n_step,
                  BATCH_SIZE,
                  BUFFER_SIZE,
                  LR,
@@ -53,7 +54,8 @@ class DQN_Agent():
         self.UPDATE_EVERY = UPDATE_EVERY
         self.BATCH_SIZE = BATCH_SIZE
         self.Q_updates = 0
-        
+        self.n_step = n_step
+
         if "per" in Network:
             self.per = True
             Network = Network.strip("+per")
@@ -71,25 +73,25 @@ class DQN_Agent():
 
 	    # Q-Network
         if Network == "noisy_dqn":
-            self.qnetwork_local = DQN.DDQN(state_size, action_size,layer_size, seed, layer_type="noisy").to(device)
-            self.qnetwork_target = DQN.DDQN(state_size, action_size,layer_size, seed, layer_type="noisy").to(device)
+            self.qnetwork_local = DQN.DDQN(state_size, action_size, layer_size, n_step, seed, layer_type="noisy").to(device)
+            self.qnetwork_target = DQN.DDQN(state_size, action_size, layer_size, seed, layer_type="noisy").to(device)
         if Network == "dqn":
-                self.qnetwork_local = DQN.DDQN(state_size, action_size,layer_size, seed).to(device)
-                self.qnetwork_target = DQN.DDQN(state_size, action_size,layer_size, seed).to(device)
+                self.qnetwork_local = DQN.DDQN(state_size, action_size,layer_size, n_step, seed).to(device)
+                self.qnetwork_target = DQN.DDQN(state_size, action_size,layer_size, n_step, seed).to(device)
         if Network == "noisy_dueling":
-            self.qnetwork_local = DQN.Dueling_QNetwork(state_size, action_size,layer_size, seed, layer_type="noisy").to(device)
-            self.qnetwork_target = DQN.Dueling_QNetwork(state_size, action_size,layer_size, seed, layer_type="noisy").to(device)
+            self.qnetwork_local = DQN.Dueling_QNetwork(state_size, action_size,layer_size, n_step, seed, layer_type="noisy").to(device)
+            self.qnetwork_target = DQN.Dueling_QNetwork(state_size, action_size,layer_size, n_step, seed, layer_type="noisy").to(device)
         if Network == "dueling":
-                self.qnetwork_local = DQN.Dueling_QNetwork(state_size, action_size,layer_size, seed).to(device)
-                self.qnetwork_target = DQN.Dueling_QNetwork(state_size, action_size,layer_size, seed).to(device)
+                self.qnetwork_local = DQN.Dueling_QNetwork(state_size, action_size,layer_size, n_step, seed).to(device)
+                self.qnetwork_target = DQN.Dueling_QNetwork(state_size, action_size,layer_size, n_step, seed).to(device)
         self.optimizer = optim.RMSprop(self.qnetwork_local.parameters(), lr=LR, alpha=0.95, eps=0.01)
         print(self.qnetwork_local)
         
         # Replay memory
         if self.per == True:
-            self.memory = PrioritizedReplay(BUFFER_SIZE, BATCH_SIZE, seed=seed)
+            self.memory = PrioritizedReplay(BUFFER_SIZE, BATCH_SIZE, seed=seed, gamma=self.GAMMA, n_step=n_step)
         else:
-            self.memory = ReplayBuffer(BUFFER_SIZE, BATCH_SIZE, self.device, seed)
+            self.memory = ReplayBuffer(BUFFER_SIZE, BATCH_SIZE, self.device, seed, self.GAMMA, n_step)
         
         # Initialize time step (for updating every UPDATE_EVERY steps)
         self.t_step = 0
@@ -156,7 +158,7 @@ class DQN_Agent():
         # Get max predicted Q values (for next states) from target model
         Q_targets_next = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(1)
         # Compute Q targets for current states 
-        Q_targets = rewards + (self.GAMMA * Q_targets_next * (1 - dones))
+        Q_targets = rewards + (self.GAMMA**self.n_step * Q_targets_next * (1 - dones))
         # Get expected Q values from local model
         Q_expected = self.qnetwork_local(states).gather(1, actions)
         # Compute loss
@@ -202,11 +204,11 @@ class DQN_Agent():
             # Get max predicted Q values (for next states) from target model
             Q_targets_next = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(1)
             # Compute Q targets for current states 
-            Q_targets = rewards + (self.GAMMA * Q_targets_next * (1 - dones))
+            Q_targets = rewards + (self.GAMMA**self.n_step * Q_targets_next * (1 - dones))
             # Get expected Q values from local model
             Q_expected = self.qnetwork_local(states).gather(1, actions)
             # Compute loss
-            loss = (F.smooth_l1_loss(Q_expected, Q_targets, reduction="none")*weights).mean().to(self.device) #mse_loss
+            loss = (F.smooth_l1_loss(Q_expected, Q_targets, reduction="none")*weights).mean().to(self.device)
             # Minimize the loss
             loss.backward()
             clip_grad_norm_(self.qnetwork_local.parameters(),1)
@@ -240,6 +242,7 @@ class DQN_C51Agent():
                  action_size,
                  Network,
                  layer_size,
+                 n_step,
                  BATCH_SIZE,
                  BUFFER_SIZE,
                  LR,
@@ -274,6 +277,7 @@ class DQN_C51Agent():
         self.BATCH_SIZE = BATCH_SIZE
         self.Q_updates = 0
         self.Network = Network
+        self.n_step = n_step
 
         self.N_ATOMS = 51
         self.VMAX = 10
@@ -295,25 +299,25 @@ class DQN_C51Agent():
 
 	    # Q-Network
         if Network == "noisy_c51":
-            self.qnetwork_local = DQN.DDQN_C51(state_size, action_size,layer_size, seed, layer_type="noisy").to(device)
-            self.qnetwork_target = DQN.DDQN_C51(state_size, action_size,layer_size, seed, layer_type="noisy").to(device)
+            self.qnetwork_local = DQN.DDQN_C51(state_size, action_size,layer_size, n_step, seed, layer_type="noisy").to(device)
+            self.qnetwork_target = DQN.DDQN_C51(state_size, action_size,layer_size, n_step, seed, layer_type="noisy").to(device)
         if Network == "c51":
-                self.qnetwork_local = DQN.DDQN_C51(state_size, action_size,layer_size, seed).to(device)
-                self.qnetwork_target = DQN.DDQN_C51(state_size, action_size,layer_size, seed).to(device)
+                self.qnetwork_local = DQN.DDQN_C51(state_size, action_size,layer_size, n_step, seed).to(device)
+                self.qnetwork_target = DQN.DDQN_C51(state_size, action_size,layer_size, n_step, seed).to(device)
         if Network == "noisy_duelingc51":
-            self.qnetwork_local = DQN.Dueling_C51Network(state_size, action_size,layer_size, seed, layer_type="noisy").to(device)
-            self.qnetwork_target = DQN.Dueling_C51Network(state_size, action_size,layer_size, seed, layer_type="noisy").to(device)
+            self.qnetwork_local = DQN.Dueling_C51Network(state_size, action_size,layer_size, n_step, seed, layer_type="noisy").to(device)
+            self.qnetwork_target = DQN.Dueling_C51Network(state_size, action_size,layer_size, n_step, seed, layer_type="noisy").to(device)
         if Network == "duelingc51":
-                self.qnetwork_local = DQN.Dueling_C51Network(state_size, action_size,layer_size, seed).to(device)
-                self.qnetwork_target = DQN.Dueling_C51Network(state_size, action_size,layer_size, seed).to(device)
+                self.qnetwork_local = DQN.Dueling_C51Network(state_size, action_size,layer_size, n_step, seed).to(device)
+                self.qnetwork_target = DQN.Dueling_C51Network(state_size, action_size,layer_size, n_step, seed).to(device)
 
         self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR, eps=0.003)
         print(self.qnetwork_local)
         # Replay memory
         if self.per == True:
-            self.memory = PrioritizedReplay(BUFFER_SIZE, BATCH_SIZE, seed=seed)
+            self.memory = PrioritizedReplay(BUFFER_SIZE, BATCH_SIZE, seed=seed, gamma=self.GAMMA, n_step=n_step)
         else:
-            self.memory = ReplayBuffer(BUFFER_SIZE, BATCH_SIZE, self.device, seed)
+            self.memory = ReplayBuffer(BUFFER_SIZE, BATCH_SIZE, self.device, seed,self.GAMMA, n_step)
         # Initialize time step (for updating every UPDATE_EVERY steps)
         self.t_step = 0
 
@@ -330,7 +334,7 @@ class DQN_C51Agent():
         dones   = dones.expand_as(next_distr)
         
         ## Compute the projection of T̂ z onto the support {z_i}
-        Tz = rewards + (1 - dones) * self.GAMMA * support
+        Tz = rewards + (1 - dones) * self.GAMMA**self.n_step * support
         Tz = Tz.clamp(min=self.VMIN, max=self.VMAX)
         b  = ((Tz - self.VMIN) / delta_z).cpu()#.to(self.device)
         l  = b.floor().long().cpu()#.to(self.device)
