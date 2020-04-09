@@ -86,11 +86,11 @@ Im open for feedback, found bugs, improvements or anything. Just leave me a mess
 **Feel free to use this code for your own projects or research.**
 For citation:
 ```
-@misc{Upside-Down,
+@misc{DQN-Atari-Agents,
   author = {Dittert, Sebastian},
-  title = {PyTorch Implementation of Upside-Down RL},
+  title = {DQN-Atari-Agents:   Modularized PyTorch implementation of several DQN Agents, i.a. DDQN, Dueling DQN, Noisy DQN, C51, Rainbow and DRQN},
   year = {2020},
   publisher = {GitHub},
   journal = {GitHub repository},
-  howpublished = {\url{https://github.com/BY571/Upside-Down-Reinforcement-Learning}},
+  howpublished = {\url{https://github.com/BY571/DQN-Atari-Agents}},
 }
