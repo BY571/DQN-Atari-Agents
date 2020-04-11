@@ -1,4 +1,4 @@
-import collectioins
+import collections
 import numpy as np
 import gym.spaces
 import gym
