@@ -1,5 +1,5 @@
 from Agents.dqn_agent import DQN_Agent, DQN_C51Agent
-from Wrapper import wrapper
+from Wrapper import wrapper_new
 import numpy as np
 import random
 from collections import namedtuple, deque
@@ -11,7 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 import gym
 import argparse 
 import time
-import matplotlib.pyplot as plt
+
 
 def run_random_policy(random_frames):
     """
@@ -98,7 +98,7 @@ if __name__ == "__main__":
                                                      "noisy_duelingc51+per",
                                                      "rainbow" ], default="dqn", help="Specify which type of DQN agent you want to train, default is DQN - baseline!")
     
-    parser.add_argument("-env", type=str, default="PongDeterministic-v4", help="Name of the atari Environment, default = Pong-v0")
+    parser.add_argument("-env", type=str, default="PongNoFrameskip-v4", help="Name of the atari Environment, default = Pong-v0")
     parser.add_argument("-frames", type=int, default=int(5e6), help="Number of frames to train, default = 5 mio")
     parser.add_argument("-seed", type=int, default=1, help="Random seed to replicate training runs, default = 1")
     parser.add_argument("-bs", "--batch_size", type=int, default=32, help="Batch size for updating the DQN, default = 32")
@@ -109,7 +109,7 @@ if __name__ == "__main__":
     parser.add_argument("-lr", type=float, default=0.00025, help="Learning rate, default = 0.00025")
     parser.add_argument("-g", "--gamma", type=float, default=0.99, help="Discount factor gamma, default = 0.99")
     parser.add_argument("-t", "--tau", type=float, default=1e-3, help="Soft update parameter tat, default = 1e-3")
-    parser.add_argument("-eps_frames", type=int, default=2e5, help="Linear annealed frames for Epsilon, default = 2e5")
+    parser.add_argument("-eps_frames", type=int, default=150000, help="Linear annealed frames for Epsilon, default = 150000")
     parser.add_argument("-min_eps", type=float, default = 0.1, help="Final epsilon greedy value, default = 0.1")
     parser.add_argument("-info", type=str, help="Name of the training run")
     parser.add_argument("--fill_buffer", type=int, default=50000, help="Adding samples to the replay buffer based on a random policy, before agent-env-interaction. Input numer of preadded frames to the buffer, default = 50000")
@@ -138,7 +138,7 @@ if __name__ == "__main__":
     env.seed(seed)
     np.random.seed(seed)
     if not "ram" in args.env and args.env != "CartPole-v0" and args.env != "LunarLander-v2": 
-        env = wrapper.wrap_deepmind(env)
+        env = wrapper_new.make_env(env)
     action_size     = env.action_space.n
     state_size = env.observation_space.shape
 
