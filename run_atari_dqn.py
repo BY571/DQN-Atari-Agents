@@ -132,13 +132,14 @@ if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Using ", device)
 
-    seed = args.seed
 
-    env = gym.make(args.env)
-    env.seed(seed)
     np.random.seed(seed)
-    if not "ram" in args.env and args.env != "CartPole-v0" and args.env != "LunarLander-v2": 
-        env = wrapper_new.make_env(env)
+    if "-ram" in args.env or args.env == "CartPole-v0" or args.env == "LunarLander-v2": 
+        env = gym.make(args.env)
+    else:
+        env = wrapper_new.make_env(args.env)
+
+    env.seed(seed)
     action_size     = env.action_space.n
     state_size = env.observation_space.shape
 
@@ -186,9 +187,9 @@ if __name__ == "__main__":
     final_average100 = run(frames = args.frames, eps_fixed=eps_fixed, eps_frames=args.eps_frames, min_eps=args.min_eps)
     t1 = time.time()
     
-    print("Training time: {}min".format((t1-t0)/60))
+    print("Training time: {}min".format(round((t1-t0)/60,2))
     if args.save_model:
-        torch.save(agent.qnetwork_local.state_dict(), str(args.info))
+        torch.save(agent.qnetwork_local.state_dict(), args.info+".pth")
 
     hparams = {"agent": args.agent,
                "batch size": args.batch_size,

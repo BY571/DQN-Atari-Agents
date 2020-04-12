@@ -84,7 +84,7 @@ class DQN_Agent():
         if Network == "dueling":
                 self.qnetwork_local = DQN.Dueling_QNetwork(state_size, action_size,layer_size, n_step, seed).to(device)
                 self.qnetwork_target = DQN.Dueling_QNetwork(state_size, action_size,layer_size, n_step, seed).to(device)
-        self.optimizer = optim.RMSprop(self.qnetwork_local.parameters(), lr=LR, alpha=0.95, eps=0.01)
+        self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR)
         print(self.qnetwork_local)
         
         # Replay memory
@@ -162,7 +162,7 @@ class DQN_Agent():
         # Get expected Q values from local model
         Q_expected = self.qnetwork_local(states).gather(1, actions)
         # Compute loss
-        loss = F.smooth_l1_loss(Q_expected, Q_targets) #mse_loss
+        loss = F.mse_loss(Q_expected, Q_targets) #mse_loss
         # Minimize the loss
         loss.backward()
         clip_grad_norm_(self.qnetwork_local.parameters(),1)
@@ -208,7 +208,7 @@ class DQN_Agent():
             # Get expected Q values from local model
             Q_expected = self.qnetwork_local(states).gather(1, actions)
             # Compute loss
-            loss = (F.smooth_l1_loss(Q_expected, Q_targets, reduction="none")*weights).mean().to(self.device)
+            loss = (F.mse_loss(Q_expected, Q_targets, reduction="none")*weights).mean().to(self.device)
             # Minimize the loss
             loss.backward()
             clip_grad_norm_(self.qnetwork_local.parameters(),1)
@@ -220,18 +220,6 @@ class DQN_Agent():
             self.memory.update_priorities(idx, abs(Q_targets.data.cpu().numpy()))
 
             return loss.detach().cpu().numpy()            
-
-    def soft_update(self, local_model, target_model):
-        """Soft update model parameters.
-        θ_target = τ*θ_local + (1 - τ)*θ_target
-        Params
-        ======
-            local_model (PyTorch model): weights will be copied from
-            target_model (PyTorch model): weights will be copied to
-            tau (float): interpolation parameter 
-        """
-        for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
-            target_param.data.copy_(self.TAU*local_param.data + (1.0-self.TAU)*target_param.data)
 
 
 class DQN_C51Agent():
@@ -311,7 +299,7 @@ class DQN_C51Agent():
                 self.qnetwork_local = DQN.Dueling_C51Network(state_size, action_size,layer_size, n_step, seed).to(device)
                 self.qnetwork_target = DQN.Dueling_C51Network(state_size, action_size,layer_size, n_step, seed).to(device)
 
-        self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR, eps=0.003)
+        self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR)
         print(self.qnetwork_local)
         # Replay memory
         if self.per == True:
