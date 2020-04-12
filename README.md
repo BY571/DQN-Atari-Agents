@@ -41,6 +41,26 @@ To train and modify your own Atari Agent the following inputs are optional:
 #### Training Progress can be view with Tensorboard
 Just run ``tensorboard --logdir=runs/``
 
+# Atari Games Performance:
+
+## Pong:
+Hyperparameters:
+- batch_size: 32
+- seed: 1
+- layer_size: 512
+- frames: 300000
+- lr: 1e-4
+- m: 10000
+- g: 0.99
+- t: 1e-3
+- eps_frames: 100000
+- min_eps: 0.01
+- u: 1
+- fill_buffer: 10000
+
+![Pong](imgs/DDQNs_pong.png)
+
+
 
 ## Convergence prove for the CartPole Environment
 Since training for the Algorithms for Atari takes a lot of time I added a quick convergence prove for the CartPole-v0 environment. You can clearly see that Raibow outperformes the other two methods Dueling DQN and DDQN.
