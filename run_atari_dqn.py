@@ -187,7 +187,7 @@ if __name__ == "__main__":
     final_average100 = run(frames = args.frames, eps_fixed=eps_fixed, eps_frames=args.eps_frames, min_eps=args.min_eps)
     t1 = time.time()
     
-    print("Training time: {}min".format(round((t1-t0)/60,2))
+    print("Training time: {}min".format(round((t1-t0)/60,2)))
     if args.save_model:
         torch.save(agent.qnetwork_local.state_dict(), args.info+".pth")
 
