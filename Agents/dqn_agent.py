@@ -208,7 +208,8 @@ class DQN_Agent():
             # Get expected Q values from local model
             Q_expected = self.qnetwork_local(states).gather(1, actions)
             # Compute loss
-            loss = (F.mse_loss(Q_expected, Q_targets, reduction="none")*weights).mean().to(self.device)
+            td_error = F.mse_loss(Q_expected, Q_targets, reduction="none")*weights
+            loss = td_error.mean().to(self.device)
             # Minimize the loss
             loss.backward()
             clip_grad_norm_(self.qnetwork_local.parameters(),1)
@@ -217,7 +218,7 @@ class DQN_Agent():
             # ------------------- update target network ------------------- #
             self.soft_update(self.qnetwork_local, self.qnetwork_target)
             # update per priorities
-            self.memory.update_priorities(idx, abs(Q_targets.data.cpu().numpy()))
+            self.memory.update_priorities(idx, abs(td_error.data.cpu().numpy()))
 
             return loss.detach().cpu().numpy()            
 
