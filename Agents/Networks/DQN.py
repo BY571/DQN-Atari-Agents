@@ -64,7 +64,7 @@ class DDQN(nn.Module):
                 weight_init([self.ff_1])
         elif self.state_dim == 1:
             if layer_type == "noisy":
-                self.head_1 = NoisyLinear(self.input_shape[0], layer_size)
+                self.head_1 = nn.Linear(self.input_shape[0], layer_size)
                 self.ff_1 = NoisyLinear(layer_size, layer_size)
                 self.ff_2 = NoisyLinear(layer_size, action_size)
             else:
@@ -138,7 +138,7 @@ class Dueling_QNetwork(nn.Module):
                 weight_init([self.ff_1_A, self.ff_1_V])
         elif self.state_dim == 1:
             if layer_type == "noisy":
-                self.head_1 = NoisyLinear(self.input_shape[0], layer_size)
+                self.head_1 = nn.Linear(self.input_shape[0], layer_size)
                 self.ff_1_A = NoisyLinear(layer_size, layer_size)
                 self.ff_1_V = NoisyLinear(layer_size, layer_size)
                 self.advantage = NoisyLinear(layer_size,action_size)
@@ -226,7 +226,7 @@ class Dueling_C51Network(nn.Module):
                 weight_init([self.ff_1_A, self.ff_1_V])
         elif self.state_dim == 1:
             if layer_type == "noisy":
-                self.head_1 = NoisyLinear(self.input_shape[0], layer_size)
+                self.head_1 = nn.Linear(self.input_shape[0], layer_size)
                 self.ff_1_A = NoisyLinear(layer_size, layer_size)
                 self.ff_1_V = NoisyLinear(layer_size, layer_size)
                 self.advantage = NoisyLinear(layer_size,action_size*N_ATOMS)
@@ -305,7 +305,7 @@ class DDQN_C51(nn.Module):
                 weight_init([self.ff_1])
         elif self.state_dim == 1:
             if layer_type == "noisy":
-                self.head_1 = NoisyLinear(self.input_shape[0], layer_size)
+                self.head_1 = nn.Linear(self.input_shape[0], layer_size)
                 self.ff_1 = NoisyLinear(layer_size, layer_size)
                 self.ff_2 = NoisyLinear(layer_size, action_size*N_ATOMS)
             else:
