@@ -11,11 +11,23 @@ Following DQN versions are included:
 Both can be enhanced with **Noisy layer**, **Per** (Prioritized Experience Replay), **Multistep Targets** and be trained in a **Categorical version (C51)**. Combining all these add-ons will lead to the *state-of-the-art* Algorithm of value-based methods called: **Rainbow**. 
 
 #### Planned Add-ons:
-- DRQN (recurrent DQN)
-- Curiosity Exploration
-- Novelty Exploration
+- IQN [ ]
+- Munchausen RL [ ]
+- DRQN (recurrent DQN) [ ]
+- Soft-DQN [ ]
+- Curiosity Exploration [ ]
+
 
 ## Train your Agent:
+#### Dependencies
+Trained and tested on:
+<pre>
+Python 3.5.6 
+PyTorch 1.4.0  
+Numpy 1.15.2 
+gym 0.10.11 
+</pre>
+
 To train the base DDQN simply run ``python run_atari_dqn.py``
 To train and modify your own Atari Agent the following inputs are optional:
 
