@@ -39,6 +39,8 @@ To train and modify your own Atari Agent the following inputs are optional:
 - bs: Batch size for updating the DQN, default = 32
 - layer_size: Size of the hidden layer, default=512
 - n_step: Number of steps for the multistep DQN Targets 
+- eval_every, Evaluate every x frames, default = 50000
+- eval_runs, Number of evaluation runs, default = 5
 - m: Replay memory size, default = 1e5
 - u: Update the network every x steps, default = 4
 - lr: Learning rate, default = 0.00025
