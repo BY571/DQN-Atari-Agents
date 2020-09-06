@@ -25,7 +25,7 @@ class DQN_Agent():
                  LR,
                  TAU,
                  GAMMA,
-                 UPDATE_EVERY,
+                 worker,
                  device,
                  seed):
         """Initialize an Agent object.
@@ -48,11 +48,13 @@ class DQN_Agent():
         self.state_size = state_size
         self.action_size = action_size
         self.seed = random.seed(seed)
+        self.t_seed = torch.manual_seed(seed)
         self.device = device
         self.TAU = TAU
         self.GAMMA = GAMMA
-        self.UPDATE_EVERY = UPDATE_EVERY
-        self.BATCH_SIZE = BATCH_SIZE
+        self.UPDATE_EVERY = 1
+        self.worker = worker 
+        self.BATCH_SIZE = BATCH_SIZE*worker
         self.Q_updates = 0
         self.n_step = n_step
 
@@ -61,8 +63,6 @@ class DQN_Agent():
             Network = Network.strip("+per")
         else:
             self.per = False
-
-        
 
         if "noisy" in Network: 
             self.noisy = True
@@ -89,9 +89,9 @@ class DQN_Agent():
         
         # Replay memory
         if self.per == True:
-            self.memory = PrioritizedReplay(BUFFER_SIZE, BATCH_SIZE, seed=seed, gamma=self.GAMMA, n_step=n_step)
+            self.memory = PrioritizedReplay(BUFFER_SIZE, BATCH_SIZE, seed=seed, gamma=self.GAMMA, n_step=n_step, parallel_env=self.worker)
         else:
-            self.memory = ReplayBuffer(BUFFER_SIZE, BATCH_SIZE, self.device, seed, self.GAMMA, n_step)
+            self.memory = ReplayBuffer(BUFFER_SIZE, BATCH_SIZE, self.device, seed, self.GAMMA, n_step, parallel_env=self.worker)
         
         # Initialize time step (for updating every UPDATE_EVERY steps)
         self.t_step = 0
@@ -113,7 +113,7 @@ class DQN_Agent():
                 self.Q_updates += 1
                 writer.add_scalar("Q_loss", loss, self.Q_updates)
 
-    def act(self, state, eps=0.):
+    def act(self, state, eps=0., eval=False):
         """Returns actions for given state as per current policy. Acting only every 4 frames!
         
         Params
@@ -123,28 +123,25 @@ class DQN_Agent():
             
         """
 
-        if self.action_step == 4:
+        # Epsilon-greedy action selection
+        if random.random() > eps: # select greedy action if random number is higher than epsilon or noisy network is used!
             state = np.array(state)
-
-            state = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
+            if len(self.state_size) > 1:
+                state = torch.from_numpy(state).float().to(self.device)        
+            else:
+                state = torch.from_numpy(state).float().to(self.device)
             self.qnetwork_local.eval()
             with torch.no_grad():
                 action_values = self.qnetwork_local(state)
             self.qnetwork_local.train()
-
-            # Epsilon-greedy action selection
-            if random.random() > eps: # select greedy action if random number is higher than epsilon or noisy network is used!
-                action = np.argmax(action_values.cpu().data.numpy())
-                self.last_action = action
-                return action
-            else:
-                action = random.choice(np.arange(self.action_size))
-                self.last_action = action 
-                return action
-            #self.action_step = 0
+            action = np.argmax(action_values.cpu().data.numpy(), axis=1)
+            return action
         else:
-            self.action_step += 1
-            return self.last_action
+            if eval:
+                action = random.choices(np.arange(self.action_size), k=1)
+            else:
+                action = random.choices(np.arange(self.action_size), k=self.worker)
+            return action
 
     def learn(self, experiences):
         """Update value parameters using given batch of experience tuples.
@@ -237,7 +234,7 @@ class DQN_C51Agent():
                  LR,
                  TAU,
                  GAMMA,
-                 UPDATE_EVERY,
+                 worker,
                  device,
                  seed):
         """Initialize an Agent object.
@@ -259,11 +256,13 @@ class DQN_C51Agent():
         self.state_size = state_size
         self.action_size = action_size
         self.seed = random.seed(seed)
+        self.t_seed = torch.manual_seed(seed)
         self.device = device
         self.TAU = TAU
         self.GAMMA = GAMMA
-        self.UPDATE_EVERY = UPDATE_EVERY
-        self.BATCH_SIZE = BATCH_SIZE
+        self.UPDATE_EVERY = 1
+        self.worker = worker
+        self.BATCH_SIZE = BATCH_SIZE*worker
         self.Q_updates = 0
         self.Network = Network
         self.n_step = n_step
@@ -304,9 +303,9 @@ class DQN_C51Agent():
         print(self.qnetwork_local)
         # Replay memory
         if self.per == True:
-            self.memory = PrioritizedReplay(BUFFER_SIZE, BATCH_SIZE, seed=seed, gamma=self.GAMMA, n_step=n_step)
+            self.memory = PrioritizedReplay(BUFFER_SIZE, BATCH_SIZE, seed=seed, gamma=self.GAMMA, n_step=n_step, parallel_env=self.worker)
         else:
-            self.memory = ReplayBuffer(BUFFER_SIZE, BATCH_SIZE, self.device, seed,self.GAMMA, n_step)
+            self.memory = ReplayBuffer(BUFFER_SIZE, BATCH_SIZE, self.device, seed,self.GAMMA, n_step, parallel_env=self.worker)
         # Initialize time step (for updating every UPDATE_EVERY steps)
         self.t_step = 0
 
@@ -355,7 +354,7 @@ class DQN_C51Agent():
                 self.Q_updates += 1
                 writer.add_scalar("Q_loss", loss, self.Q_updates)
 
-    def act(self, state, eps=0.):
+    def act(self, state, eps=0., eval=False):
         """Returns actions for given state as per current policy. Acting only every 4 frames!
         
         Params
@@ -365,30 +364,25 @@ class DQN_C51Agent():
             
         """
 
-        if self.action_step == 4:
+        # Epsilon-greedy action selection
+        if random.random() > eps: # select greedy action if random number is higher than epsilon or noisy network is used!
             state = np.array(state)
-
-            state = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
+            if len(self.state_size) > 1:
+                state = torch.from_numpy(state).float().to(self.device)        
+            else:
+                state = torch.from_numpy(state).float().to(self.device)
             self.qnetwork_local.eval()
             with torch.no_grad():
-                action_values = self.qnetwork_local.act(state)
+                action_values = self.qnetwork_local(state)
             self.qnetwork_local.train()
-
-            # Epsilon-greedy action selection
-            if random.random() > eps:# or self.noisy: # select greedy action if random number is higher than epsilon or noisy network is used!
-                action = np.argmax(action_values.cpu().data.numpy())
-                #print("greedy")
-                self.last_action = action
-                return action
-            else:
-                action = random.choice(np.arange(self.action_size))
-                #print("random")
-                self.last_action = action 
-                return action
-            #self.action_step = 0
+            action = np.argmax(action_values.cpu().data.numpy(), axis=1)
+            return action
         else:
-            self.action_step += 1
-            return self.last_action
+            if eval:
+                action = random.choices(np.arange(self.action_size), k=1)
+            else:
+                action = random.choices(np.arange(self.action_size), k=self.worker)
+            return action
 
     def learn(self, experiences):
         """Update value parameters using given batch of experience tuples.

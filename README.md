@@ -1,7 +1,7 @@
 ## DQN-Atari-Agents
 Modularized training of different DQN Algorithms.
 
-This repository contains several Add-ons to the base DQN Algorithm. All versions can be trained from one script and include the option to train from raw pixel or ram digit data. 
+This repository contains several Add-ons to the base DQN Algorithm. All versions can be trained from one script and include the option to train from raw pixel or ram digit data. Recently added multiprocessing to run several environments in parallel for faster training. 
 
 Following DQN versions are included:
 
@@ -11,7 +11,7 @@ Following DQN versions are included:
 Both can be enhanced with **Noisy layer**, **Per** (Prioritized Experience Replay), **Multistep Targets** and be trained in a **Categorical version (C51)**. Combining all these add-ons will lead to the *state-of-the-art* Algorithm of value-based methods called: **Rainbow**. 
 
 #### Planned Add-ons:
-- IQN [ ]
+- Parallel Environments for faster training (wall clock time) [X]
 - Munchausen RL [ ]
 - DRQN (recurrent DQN) [ ]
 - Soft-DQN [ ]
@@ -22,7 +22,7 @@ Both can be enhanced with **Noisy layer**, **Per** (Prioritized Experience Repla
 #### Dependencies
 Trained and tested on:
 <pre>
-Python 3.5.6 
+Python 3.6 
 PyTorch 1.4.0  
 Numpy 1.15.2 
 gym 0.10.11 
@@ -31,9 +31,9 @@ gym 0.10.11
 To train the base DDQN simply run ``python run_atari_dqn.py``
 To train and modify your own Atari Agent the following inputs are optional:
 
-*example:* ``python run_atari_dqn.py -env Breakout-v0 -agent dueling -u 1 -eps_frames 100000 -seed 42 -info Breakout_run1``
+*example:* ``python run_atari_dqn.py -env BreakoutNoFrameskip-v4 -agent dueling -u 1 -eps_frames 100000 -seed 42 -info Breakout_run1``
 - agent: Specify which type of DQN agent you want to train, default is DQN - baseline! **Following agent inputs are currently possible:** ``dqn``, ``dqn+per``, ``noisy_dqn``, ``noisy_dqn+per``, ``dueling``, ``dueling+per``, ``noisy_dueling``, ``noisy_dueling+per``, ``c51``, ``c51+per``, ``noisy_c51``, ``noisy_c51+per``, ``duelingc51``, ``duelingc51+per``, ``noisy_duelingc51``, ``noisy_duelingc51+per``, ``rainbow``
-- env: Name of the atari Environment, default = Pong-v0
+- env: Name of the atari Environment, default = PongNoFrameskip-v4
 - frames: Number of frames to train, default = 5 mio
 - seed: Random seed to reproduce training runs, default = 1
 - bs: Batch size for updating the DQN, default = 32
@@ -42,15 +42,15 @@ To train and modify your own Atari Agent the following inputs are optional:
 - eval_every, Evaluate every x frames, default = 50000
 - eval_runs, Number of evaluation runs, default = 5
 - m: Replay memory size, default = 1e5
-- u: Update the network every x steps, default = 4
 - lr: Learning rate, default = 0.00025
 - g: Discount factor gamma, default = 0.99
 - t: Soft update parameter tat, default = 1e-3
-- eps_frames: Linear annealed frames for Epsilon, default = 2e5
+- eps_frames: Linear annealed frames for Epsilon, default = 150000
 - min_eps: Epsilon greedy annealing crossing point. Fast annealing until this point, from there slowly to 0 until the last frame, default = 0.1
 - info: Name of the training run.
 - fill_buffer: Adding samples to the replay buffer based on a random policy, before agent-env-interaction. Input numer of preadded frames to the buffer, default = 50000
-- save_model: Specify if the trained network shall be saved [1] or not [0], default is 0 - not saved!
+- save_model: Specify if the trained network shall be saved [1] or not [0], default is 1 - saved!
+- w, --worker: Number of parallel environments
 
 #### Training Progress can be view with Tensorboard
 Just run ``tensorboard --logdir=runs/``
