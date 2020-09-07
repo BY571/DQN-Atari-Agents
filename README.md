@@ -101,6 +101,22 @@ Its interesting to see that the add-ons have a negative impact for the super sim
 
 ![dueling](imgs/Dueling_DQN_Versions.png)
 
+## Parallel Environments
+
+To reduce wall clock time while training parallel environments are implemented. Following diagrams show the speed improvement for the two envrionments CartPole-v0 and LunarLander-v2. Tested with 1,2,4,6,8,10,16 worker. Each number of worker was tested over 3 seeds.  
+
+A | B
+- | - 
+![alt](CP_training_time.png) | ![alt](CP_speed_test.png)
+
+A | B
+- | -
+![alt](worker_LL_t.png) | ![alt](worker_LL_p.png)
+
+Convergence behavior for each worker number can be found: [CartPole-v0](https://github.com/BY571/DQN-Atari-Agents/blob/master/imgs/Worker_convergent_CP.png) and [LunarLander](https://github.com/BY571/DQN-Atari-Agents/blob/master/imgs/Worker_convergent_LL.png)
+
+
+
 ## Help and issues:
 Im open for feedback, found bugs, improvements or anything. Just leave me a message or contact me.
 
