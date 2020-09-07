@@ -104,12 +104,12 @@ Its interesting to see that the add-ons have a negative impact for the super sim
 To reduce wall clock time while training parallel environments are implemented. Following diagrams show the speed improvement for the two envrionments CartPole-v0 and LunarLander-v2. Tested with 1,2,4,6,8,10,16 worker. Each number of worker was tested over 3 seeds.  
 
 <p float="left">
-  <img src="/imgs/CP_training_time.png" width="400" />
-  <img src="/imgs/CP_speed_test.png" width="400" /> 
+  <img src="/imgs/CP_training_time_.png" width="400" />
+  <img src="/imgs/CP_speed_test_.png" width="400" /> 
 </p>
 <p float="left">
-  <img src="/imgs/worker_LL_t.png" width="400" />
-  <img src="/imgs/worker_LL_p.png" width="400" /> 
+  <img src="/imgs/worker_LL_t_.png" width="400" />
+  <img src="/imgs/worker_LL_p_.png" width="400" /> 
 </p>
 
 Convergence behavior for each worker number can be found: [CartPole-v0](https://github.com/BY571/DQN-Atari-Agents/blob/master/imgs/Worker_convergent_CP.png) and [LunarLander](https://github.com/BY571/DQN-Atari-Agents/blob/master/imgs/Worker_convergent_LL.png)
