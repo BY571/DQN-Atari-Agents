@@ -1,5 +1,6 @@
 from .ReplayMemories.ReplayMemory import ReplayBuffer, PrioritizedReplay
 from .Networks import DQN
+from .IntrinsicCuriosityModule import ICM, Inverse, Forward
 
 import numpy as np
 import torch
@@ -25,6 +26,7 @@ class DQN_Agent():
                  LR,
                  TAU,
                  GAMMA,
+                 curiosity,
                  worker,
                  device,
                  seed):
@@ -47,6 +49,8 @@ class DQN_Agent():
         """
         self.state_size = state_size
         self.action_size = action_size
+        self.curiosity = curiosity
+        self.eta = 1
         self.seed = random.seed(seed)
         self.t_seed = torch.manual_seed(seed)
         self.device = device
@@ -93,6 +97,12 @@ class DQN_Agent():
         else:
             self.memory = ReplayBuffer(BUFFER_SIZE, BATCH_SIZE, self.device, seed, self.GAMMA, n_step, parallel_env=self.worker)
         
+        if self.curiosity != 0:
+            inverse_m = Inverse(self.state_size, self.action_size)
+            forward_m = Forward(self.state_size, self.action_size, inverse_m.calc_input_layer(), device=device)
+            self.ICM = ICM(inverse_m, forward_m).to(device)
+            print(inverse_m, forward_m)
+
         # Initialize time step (for updating every UPDATE_EVERY steps)
         self.t_step = 0
     
@@ -107,11 +117,12 @@ class DQN_Agent():
             if len(self.memory) > self.BATCH_SIZE:
                 experiences = self.memory.sample()
                 if self.per == False:
-                    loss = self.learn(experiences)
+                    loss, icm_loss = self.learn(experiences)
                 else: 
                     loss = self.learn_per(experiences)
                 self.Q_updates += 1
                 writer.add_scalar("Q_loss", loss, self.Q_updates)
+                writer.add_scalar("ICM_loss", icm_loss, self.Q_updates)
 
     def act(self, state, eps=0., eval=False):
         """Returns actions for given state as per current policy. Acting only every 4 frames!
@@ -152,14 +163,31 @@ class DQN_Agent():
         """
         self.optimizer.zero_grad()
         states, actions, rewards, next_states, dones = experiences
+
+        # calculate curiosity
+        if self.curiosity != 0:
+            forward_pred_err, inverse_pred_err = self.ICM.calc_errors(state1=states, state2=next_states, action=actions)
+            r_i = self.eta * forward_pred_err
+            assert r_i.shape == rewards.shape, "r_ and r_e have not the same shape"
+            if self.curiosity == 1:
+                rewards += r_i.detach()
+            else:
+                rewards = r_i.detach()
+
         # Get max predicted Q values (for next states) from target model
         Q_targets_next = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(1)
         # Compute Q targets for current states 
         Q_targets = rewards + (self.GAMMA**self.n_step * Q_targets_next * (1 - dones))
         # Get expected Q values from local model
         Q_expected = self.qnetwork_local(states).gather(1, actions)
+
+
+
+        if self.curiosity != 0:
+            icm_loss = self.ICM.update_ICM(forward_pred_err, inverse_pred_err)
+        
         # Compute loss
-        loss = F.mse_loss(Q_expected, Q_targets) #mse_loss
+        loss = F.mse_loss(Q_expected, Q_targets) 
         # Minimize the loss
         loss.backward()
         clip_grad_norm_(self.qnetwork_local.parameters(),1)
@@ -167,7 +195,7 @@ class DQN_Agent():
 
         # ------------------- update target network ------------------- #
         self.soft_update(self.qnetwork_local, self.qnetwork_target)
-        return loss.detach().cpu().numpy()            
+        return loss.detach().cpu().numpy(),  icm_loss            
 
     def soft_update(self, local_model, target_model):
         """Soft update model parameters.

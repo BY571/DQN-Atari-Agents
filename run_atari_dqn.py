@@ -134,6 +134,7 @@ if __name__ == "__main__":
     parser.add_argument("-eval_every", type=int, default=50000, help="Evaluate every x frames, default = 50000")
     parser.add_argument("-eval_runs", type=int, default=5, help="Number of evaluation runs, default = 5")
     parser.add_argument("-min_eps", type=float, default = 0.1, help="Final epsilon greedy value, default = 0.1")
+    parser.add_argument("-ic", "--intrinsic_curiosity", type=int, choices=[0,1,2], default=0, help="Adding intrinsic curiosity to the extrinsic reward. 0 - only reward and no curiosity, 1 - reward and curiosity, 2 - only curiosity, default = 0")
     parser.add_argument("-info", type=str, help="Name of the training run")
     parser.add_argument("--fill_buffer", type=int, default=50000, help="Adding samples to the replay buffer based on a random policy, before agent-env-interaction. Input numer of preadded frames to the buffer, default = 50000")
     parser.add_argument("-w", "--worker", type=int, default=1, help="Number of parallel working environments, default is 1")
@@ -157,7 +158,7 @@ if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Using ", device)
 
-
+    torch.autograd.set_detect_anomaly(True)
     np.random.seed(seed)
     random.seed(seed)
     torch.manual_seed(seed)
@@ -183,7 +184,8 @@ if __name__ == "__main__":
                         BUFFER_SIZE=BUFFER_SIZE, 
                         LR=LR, 
                         TAU=TAU, 
-                        GAMMA=GAMMA,  
+                        GAMMA=GAMMA, 
+                        curiosity=args.intrinsic_curiosity, 
                         worker=args.worker,
                         device=device, 
                         seed=seed)
@@ -198,6 +200,7 @@ if __name__ == "__main__":
                         LR=LR, 
                         TAU=TAU, 
                         GAMMA=GAMMA, 
+                        curiosity=args.intrinsic_curiosity,
                         worker=args.worker,
                         device=device, 
                         seed=seed)
