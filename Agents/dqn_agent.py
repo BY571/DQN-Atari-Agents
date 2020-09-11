@@ -50,7 +50,7 @@ class DQN_Agent():
         self.state_size = state_size
         self.action_size = action_size
         self.curiosity = curiosity
-        self.eta = 1
+        self.eta = .1
         self.seed = random.seed(seed)
         self.t_seed = torch.manual_seed(seed)
         self.device = device
@@ -262,6 +262,7 @@ class DQN_C51Agent():
                  LR,
                  TAU,
                  GAMMA,
+                 curiosity,
                  worker,
                  device,
                  seed):
@@ -288,6 +289,7 @@ class DQN_C51Agent():
         self.device = device
         self.TAU = TAU
         self.GAMMA = GAMMA
+        self.curiosity = curiosity
         self.UPDATE_EVERY = 1
         self.worker = worker
         self.BATCH_SIZE = BATCH_SIZE*worker

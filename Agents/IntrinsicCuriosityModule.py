@@ -2,7 +2,7 @@ import torch
 import numpy as np 
 import torch.nn as nn 
 import torch.optim as optim
-
+from torch.nn.utils import clip_grad_norm_
 
 class Inverse(nn.Module):
     """
@@ -140,5 +140,7 @@ class ICM(nn.Module):
         loss = ((1. - self.beta)*inverse_err + self.beta*forward_err).mean()
         #print(loss)
         loss.backward(retain_graph=True)
+        clip_grad_norm_(self.inverse_model.parameters(),1)
+        clip_grad_norm_(self.forward_model.parameters(),1)
         self.optimizer.step()
         return loss.detach().cpu().numpy()

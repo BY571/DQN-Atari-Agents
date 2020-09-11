@@ -130,7 +130,7 @@ if __name__ == "__main__":
     parser.add_argument("-lr", type=float, default=0.00025, help="Learning rate, default = 0.00025")
     parser.add_argument("-g", "--gamma", type=float, default=0.99, help="Discount factor gamma, default = 0.99")
     parser.add_argument("-t", "--tau", type=float, default=1e-3, help="Soft update parameter tat, default = 1e-3")
-    parser.add_argument("-eps_frames", type=int, default=150000, help="Linear annealed frames for Epsilon, default = 150000")
+    parser.add_argument("-eps_frames", type=int, default=1000000, help="Linear annealed frames for Epsilon, default = 1mio")
     parser.add_argument("-eval_every", type=int, default=50000, help="Evaluate every x frames, default = 50000")
     parser.add_argument("-eval_runs", type=int, default=5, help="Number of evaluation runs, default = 5")
     parser.add_argument("-min_eps", type=float, default = 0.1, help="Final epsilon greedy value, default = 0.1")

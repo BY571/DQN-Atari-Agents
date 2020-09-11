@@ -15,7 +15,7 @@ Both can be enhanced with **Noisy layer**, **Per** (Prioritized Experience Repla
 - Munchausen RL [ ]
 - DRQN (recurrent DQN) [ ]
 - Soft-DQN [ ]
-- Curiosity Exploration [ ]
+- Curiosity Exploration [X] currently only for DQN  
 
 
 ## Train your Agent:
@@ -47,6 +47,7 @@ To train and modify your own Atari Agent the following inputs are optional:
 - t: Soft update parameter tat, default = 1e-3
 - eps_frames: Linear annealed frames for Epsilon, default = 150000
 - min_eps: Epsilon greedy annealing crossing point. Fast annealing until this point, from there slowly to 0 until the last frame, default = 0.1
+- ic, --intrinsic_curiosity, Adding intrinsic curiosity to the extrinsic reward. 0 - only reward and no curiosity, 1 - reward and curiosity, 2 - only curiosity, default = 0.
 - info: Name of the training run.
 - fill_buffer: Adding samples to the replay buffer based on a random policy, before agent-env-interaction. Input numer of preadded frames to the buffer, default = 50000
 - save_model: Specify if the trained network shall be saved [1] or not [0], default is 1 - saved!
