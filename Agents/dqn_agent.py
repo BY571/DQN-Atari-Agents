@@ -182,7 +182,7 @@ class DQN_Agent():
         Q_expected = self.qnetwork_local(states).gather(1, actions)
 
 
-
+        icm_loss = 0
         if self.curiosity != 0:
             icm_loss = self.ICM.update_ICM(forward_pred_err, inverse_pred_err)
         
@@ -234,7 +234,7 @@ class DQN_Agent():
             Q_expected = self.qnetwork_local(states).gather(1, actions)
             # Compute loss
             td_error =  Q_targets - Q_expected
-            loss = td_error.pow(2)*weights.mean().to(self.device)
+            loss = (td_error.pow(2)*weights).mean().to(self.device)
             # Minimize the loss
             loss.backward()
             clip_grad_norm_(self.qnetwork_local.parameters(),1)
